@@ -64,7 +64,7 @@ function setView(name,updateHash=true){
   const titles={overview:'Overview',team:'Staff profiles',links:'Live links & QR',archive:'Archive & recovery'};
   const crumb=document.querySelector('.breadcrumb strong');if(crumb)crumb.textContent=titles[name];
   if(updateHash && location.hash!=='#'+name)history.replaceState(null,'','#'+name);
-  window.scrollTo({top:0,behavior:'instant'});
+  window.scrollTo({top:0,behavior:'auto'});
 }
 function activeProfiles(){return people.filter(p=>!p.deleted_at&&p.status!=='archived')}
 function archivedProfiles(){return people.filter(p=>p.deleted_at||p.status==='archived')}
