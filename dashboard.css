@@ -67,3 +67,108 @@ body.auth-mode .auth-screen{padding:24px 16px 20px}
 .code-column{animation:none!important;opacity:.04!important;top:18%!important;bottom:auto!important;transform:none!important}
 .login-panel,.google-login,.login-submit{transition:none!important}
 }
+
+
+/* Qbranch Management 2.0 — real views, state controls & structured editor */
+.dashboard-view[hidden]{display:none!important}
+.dashboard-view{animation:qViewIn .22s ease-out both}
+@keyframes qViewIn{from{opacity:.45;transform:translateY(8px)}to{opacity:1;transform:none}}
+.page-heading{margin-bottom:26px}
+.page-heading h1{font:400 clamp(38px,4.1vw,55px)/1.08 "Libre Caslon Display",Georgia,serif;color:var(--deep);letter-spacing:-.025em;margin:8px 0 13px}
+.page-heading h1 em{color:var(--blue)}
+.page-heading p{color:var(--muted);font-size:13px;line-height:1.7;max-width:690px;margin:0}
+.overview-columns{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.82fr);align-items:start;gap:22px}
+.overview-profiles{display:grid;gap:1px}
+.overview-person{display:flex;align-items:center;gap:14px;min-width:0;padding:12px 0;border-top:1px solid #eef1f7}
+.overview-person .person-photo{flex:0 0 46px;width:46px;height:46px}
+.overview-person-label{flex:1;min-width:0}
+.overview-person-label strong{display:block;color:#203765;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.overview-person-label small{display:block;font-size:11px;color:#8592a7;margin-top:5px}
+.overview-actions{display:grid;gap:18px}
+.overview-action-card{padding:27px;border-radius:15px;background:linear-gradient(135deg,#133a88,#2356b2);color:#fff;box-shadow:0 17px 40px rgba(21,56,142,.16)}
+.overview-action-card .eyebrow{color:#a8ccff}
+.overview-action-card h3{font:400 26px/1.14 "Libre Caslon Display",serif;margin:13px 0 11px}
+.overview-action-card p{color:#d8e5fc;font-size:12px;line-height:1.65;margin:0 0 18px}
+.overview-action-card>.primary-btn{background:#fff;border-color:#fff;color:var(--blue);box-shadow:none}
+.overview-action-card.secondary{background:#fff;border:1px solid var(--line);color:var(--deep);box-shadow:var(--shadow)}
+.overview-action-card.secondary .eyebrow{color:var(--blue)}
+.overview-action-card.secondary p{color:#8290a9}
+.person-row{grid-template-columns:54px minmax(135px,1.35fr) minmax(130px,.9fr) minmax(92px,auto) minmax(265px,auto);gap:13px}
+.row-status{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.freeze-tag{display:inline-flex;background:#ecf3ff;color:#355b9b;font-size:9px;font-weight:750;border:1px solid #d8e6fd;border-radius:40px;padding:5px 9px}
+.status-badge.archived{background:#eef1f6;color:#737d90}
+.status-badge.removed{background:#fff0ee;color:#a14e44}
+.person-actions{position:relative;display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.action-btn.view{border-color:#b9cdf0;color:#183f90}
+.row-menu{position:relative}
+.row-menu summary{list-style:none;cursor:pointer;user-select:none;padding:8px 11px;border:1px solid #dae4f3;border-radius:7px;background:#fff;color:#34517f;font-weight:700;font-size:11px}
+.row-menu summary::-webkit-details-marker{display:none}
+.row-menu[open] summary{color:#fff;background:var(--blue)}
+.row-menu-panel{position:absolute;right:0;top:calc(100% + 6px);min-width:180px;background:#fff;border:1px solid #dde5f2;border-radius:10px;padding:6px;box-shadow:0 14px 38px rgba(21,56,142,.16);z-index:6;display:grid;gap:3px}
+.menu-action{border:0;background:transparent;color:#344c77;text-align:left;font-weight:700;font-size:11px;padding:10px 11px;border-radius:7px;white-space:nowrap}
+.menu-action:hover{background:#edf3ff}
+.menu-action.danger{color:#b0524d}
+.menu-action.danger:hover{background:#fff1ef}
+.menu-action:disabled{opacity:.4}
+.live-links-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.link-card{border:1px solid #e2e9f5;background:#fcfdff;border-radius:14px;padding:19px;min-width:0}
+.link-top{display:flex;align-items:center;gap:12px;min-width:0}
+.link-top .person-photo{width:47px;height:47px;flex:0 0 47px}
+.link-profile-text{flex:1;min-width:0}
+.link-profile-text strong{display:block;font-size:13px;font-weight:750;color:var(--deep);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-profile-text small{font-size:10px;color:#91a0b4;display:block;margin-top:5px}
+.link-url{background:#eef3fd;border:1px solid #dce7fa;color:#3f64a1;padding:11px 12px;border-radius:8px;margin:17px 0 12px;font-size:11px;white-space:nowrap;overflow-x:auto;font-family:"SFMono-Regular",Consolas,monospace}
+.link-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.link-actions .primary-btn,.link-actions .ghost-btn{min-height:37px;padding:8px 12px;font-size:11px}
+.editor{width:min(850px,calc(100vw - 24px));max-height:92svh}
+.editor-body{display:grid;gap:12px}
+.editor-intro p{font-size:11px;color:#8998af;margin:5px 0 1px}
+.editor-subsection{border-top:1px solid #e7edf7;margin-top:9px;padding-top:23px}
+.subsection-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:17px}
+.subsection-title h3{font:400 27px "Libre Caslon Display",serif;color:var(--deep);margin:7px 0}
+.subsection-title p{font-size:11px;color:#8b99ad;margin:0;line-height:1.5}
+.structured-fields{display:grid;gap:12px}
+.structured-row{background:#f8faff;border:1px solid #e0e9f8;border-radius:12px;padding:14px;align-items:end}
+.structured-row label{display:grid;gap:6px;font-size:10px;font-weight:750;color:#4d6184;min-width:0}
+.structured-row input,.structured-row select{border:1px solid #d5e0f1;border-radius:7px;background:#fff;padding:10px 11px;min-width:0;width:100%;height:40px;font-size:12px;color:#223d68}
+.structured-row input:disabled{background:#f0f3fa;color:#afb9c8}
+.experience-row{display:grid;grid-template-columns:1fr 1fr .75fr .75fr;gap:11px}
+.experience-row .current-toggle{display:flex;flex-direction:row;align-items:center;gap:8px;grid-column:1/4;font-size:11px;min-height:30px}
+.current-toggle input{width:16px;height:16px;accent-color:#184393;flex:0 0 16px}
+.row-remove{border:1px solid #eedad8;background:#fff;color:#b25d58;font-size:20px;border-radius:7px;height:38px;padding:0 14px;justify-self:end;min-width:45px}
+.row-remove:hover{background:#fff1ef}
+.social-row{display:grid;grid-template-columns:minmax(125px,1fr) minmax(180px,2.3fr) auto;gap:12px}
+.editor-save-note{font-size:10px;color:#8695ac;line-height:1.5;margin-right:auto;max-width:280px}
+.confirm-dialog{width:min(445px,calc(100vw - 30px));padding:28px 30px;border:1px solid #e0e6f1;border-radius:17px}
+.confirm-header{text-align:left}
+.confirm-symbol{display:grid;place-items:center;width:38px;height:38px;background:#fff0e7;color:#ae6a3b;border-radius:50%;font-size:20px;font-weight:800}
+.confirm-header h2{font:400 30px "Libre Caslon Display",serif;color:var(--deep);margin:16px 0 7px}
+.confirm-header p{font-size:12px;line-height:1.7;color:#74839c}
+.confirm-dialog label{font-size:11px;font-weight:750;display:grid;gap:9px;color:#3d5277;margin:14px 0}
+.confirm-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:25px}
+@media(max-width:1280px){
+.person-row{grid-template-columns:50px minmax(135px,1fr) minmax(100px,.9fr) 90px;gap:12px}
+.person-actions{grid-column:2/-1;justify-content:flex-start}
+}
+@media(max-width:1050px){.overview-columns{grid-template-columns:1fr}.overview-actions{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.live-links-list{grid-template-columns:1fr}.overview-actions{grid-template-columns:1fr}.person-row{grid-template-columns:49px 1fr 100px}.person-title{grid-column:2/3}.row-status{grid-column:3/4;grid-row:1/3}.person-actions{grid-column:1/-1}}
+@media(max-width:560px){
+.page-heading h1{font-size:39px}
+.toolbar{flex-wrap:wrap}
+.toolbar input{flex-basis:100%;width:100%}
+.subsection-title{align-items:flex-start;flex-direction:column}
+.structured-row.experience-row{grid-template-columns:1fr 1fr}
+.experience-row label:nth-child(1),.experience-row label:nth-child(2){grid-column:1/-1}
+.experience-row .current-toggle{grid-column:1/2}
+.structured-row.social-row{grid-template-columns:1fr auto}
+.social-row .social-username{grid-column:1/-1;grid-row:2}
+.social-row .row-remove{grid-column:2;grid-row:1}
+.editor-footer{flex-wrap:wrap}
+.editor-save-note{max-width:none;flex-basis:100%}
+.person-row{grid-template-columns:43px 1fr auto}
+.row-status{grid-column:3}
+.row-menu-panel{right:auto;left:0}
+.link-actions{display:grid;grid-template-columns:1fr 1fr}
+.link-actions .primary-btn{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){.dashboard-view{animation:none!important}}
