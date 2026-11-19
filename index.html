@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="dashboard.css">
 <script defer src="dashboard.js"></script>
 </head>
-<body>
+<body class="auth-mode">
 <div class="frame">
 <aside class="sidebar">
  <a class="brand" href="./" aria-label="Qbranch dashboard"><img src="Qbranch-logo.png" alt="Qbranch company logo"><span>QBRANCH<small>UGANDA LIMITED</small></span></a>
@@ -35,25 +35,40 @@
  </header>
  <main class="main">
   <section class="loading-state" id="loadingState"><div class="spinner"></div><h1>Preparing your workspace</h1><p>Checking your secure connection...</p></section>
-  <section id="authScreen" class="auth-screen" hidden>
-   <div class="auth-card">
-     <div class="auth-crest"><img src="Qbranch-logo.png" alt="Qbranch logo"></div>
-     <div class="eyebrow">AUTOMINDS AFRICA · CLIENT WORKSPACE</div>
-     <h1>Manage your <em>digital profiles.</em></h1>
-     <p>Sign in with your authorized AutoMinds administrator account to update Qbranch staff profiles, upload photos and publish live links.</p>
-     <form id="loginForm" class="auth-form">
-      <label for="authEmail">Email address</label><input id="authEmail" name="email" type="email" required autocomplete="username" placeholder="automindsafrica@gmail.com">
-      <label for="authPassword">Password</label><input id="authPassword" name="password" type="password" required autocomplete="current-password" minlength="8" placeholder="Enter your password">
-      <button class="primary-btn full" id="loginBtn" type="submit">Sign in</button>
-     </form>
-     <div id="otpArea" class="otp-area" hidden>
-       <label for="otpCode">Verification code sent to your email</label>
-       <div class="otp-actions"><input id="otpCode" type="text" inputmode="numeric" maxlength="8" placeholder="Enter email code"><button class="primary-btn" type="button" id="verifyOtp">Verify code</button></div>
-       <button class="text-btn" id="resendOtp" type="button">Send another code</button>
+  <section id="authScreen" class="auth-screen" hidden aria-label="Sign in to Qbranch Profile Manager">
+   <div class="code-atmosphere" id="codeAtmosphere" aria-hidden="true"></div>
+   <div class="login-layout">
+     <div class="login-heading">
+       <img src="Qbranch-logo.png" alt="Qbranch Uganda Limited" width="105" height="105">
+       <div class="login-overline"><span></span> QBRANCH UGANDA LIMITED <span></span></div>
+       <h1>Welcome <em>back.</em></h1>
+       <p>Sign in to your digital profile management workspace.</p>
      </div>
-     <p id="authMessage" class="message" role="status" aria-live="polite"></p>
-     <button class="text-btn" type="button" id="registerBtn">First time? Create administrator account</button>
-     <p class="auth-disclaimer">Only accounts approved by AutoMinds Africa can access profile data. Identity and permissions are verified by Neon.</p>
+     <div class="login-panel">
+       <div class="login-panel-label"><span class="login-indicator"></span> SECURE ADMINISTRATOR ACCESS</div>
+       <h2>Sign in</h2>
+       <p class="login-panel-subtitle">Use an authorized account to manage your team's professional profiles.</p>
+       <form id="loginForm" class="auth-form">
+         <label for="authEmail">Email address</label>
+         <input id="authEmail" name="email" type="email" required autocomplete="username" spellcheck="false" placeholder="Enter your email">
+         <label for="authPassword">Password</label>
+         <input id="authPassword" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password">
+         <button class="primary-btn full login-submit" id="loginBtn" type="submit">Sign in <span aria-hidden="true">↗</span></button>
+       </form>
+       <div class="sign-in-divider"><span>OR</span></div>
+       <button class="google-login" id="googleSignIn" type="button" aria-label="Continue with Google">
+         <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true">
+           <path fill="#4285F4" d="M21.35 12.22c0-.79-.07-1.37-.23-1.98H12v3.73h5.35a4.6 4.6 0 0 1-1.99 3.01v2.5h3.22c1.88-1.74 2.97-4.28 2.97-7.26Z"/>
+           <path fill="#34A853" d="M12 21.75c2.7 0 4.96-.9 6.61-2.44l-3.22-2.5c-.9.61-2.03.97-3.39.97-2.61 0-4.83-1.77-5.62-4.15H3.06v2.57A9.99 9.99 0 0 0 12 21.75Z"/>
+           <path fill="#FBBC05" d="M6.38 13.63A6 6 0 0 1 6.06 12c0-.57.11-1.12.32-1.63V7.8H3.06A9.86 9.86 0 0 0 2 12c0 1.6.38 3.11 1.06 4.2l3.32-2.57Z"/>
+           <path fill="#EA4335" d="M12 6.22c1.47 0 2.79.51 3.83 1.5l2.87-2.87A9.4 9.4 0 0 0 12 2.25c-3.95 0-7.36 2.26-8.94 5.55l3.32 2.57c.79-2.38 3.01-4.15 5.62-4.15Z"/>
+         </svg>
+         Continue with Google
+       </button>
+       <p id="authMessage" class="message" role="status" aria-live="polite"></p>
+       <div class="login-security"><span class="shield-icon" aria-hidden="true">◇</span> Access is restricted to verified, approved administrators.</div>
+     </div>
+     <div class="login-credit"><span>POWERED BY</span><a href="https://automindsafrica.com" target="_blank" rel="noopener noreferrer">AutoMinds Africa</a><span class="credit-separator">·</span><span>Work Smarter. Work Faster.</span></div>
    </div>
   </section>
   <section id="dashboard" hidden>
