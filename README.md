@@ -41,3 +41,11 @@ An AutoMinds Africa project. Live dashboard: https://mdanson27.github.io/Qbranch
 - The original Collins reference repository remains unchanged.
 
 AutoMinds Africa — Work Smarter. Work Faster.
+
+## Directory reliability fix — November 2026
+- The previous dashboard fetched profiles under RLS and treated an empty response as an empty team, even when saved staff existed.
+- A new administrator-only Neon function, public.qbranch_admin_snapshot(), now returns authorized company and staff data in a single transactionally consistent request.
+- Database permissions deny anonymous execution; only approved and verified authenticated administrators may fetch the private snapshot.
+- The frontend validates the complete response, retries failed requests and keeps the last valid staff list on refresh failure.
+- A connection banner offers a Retry connection button; staff search now separates no search matches from no stored profiles.
+- No existing staff records or photos were changed.
