@@ -3,6 +3,8 @@ const $ = (id) => document.getElementById(id);
 const API_BASE = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.neon.tech/qbranch_profiles/rest/v1';
 const AUTH_BASE = 'https://ep-nameless-cherry-bet0ev73.neonauth.c-9.us-east-2.aws.neon.tech/qbranch_profiles/auth';
 let cachedAnonymousToken = null;
+let lastPublicUpdatedAt = null;
+let refreshInProgress = false;
 const PROFILE_SLUG = (() => {
   const match = window.location.pathname.match(/\/p\/([a-z0-9-]+)\/?$/i);
   return match ? match[1].toLowerCase() : new URLSearchParams(window.location.search).get('profile');
@@ -196,11 +198,11 @@ async function getAnonymousToken(signal) {
 }
 async function fetchData(path,signal) {
   const token=await getAnonymousToken(signal);
-  let response=await fetch(API_BASE+'/'+path,{signal,headers:{Accept:'application/json',Authorization:'Bearer '+token}});
+  let response=await fetch(API_BASE+'/'+path,{signal,cache:'no-store',headers:{Accept:'application/json',Authorization:'Bearer '+token}});
   if(response.status===401){
     cachedAnonymousToken=null;
     const fresh=await getAnonymousToken(signal);
-    response=await fetch(API_BASE+'/'+path,{signal,headers:{Accept:'application/json',Authorization:'Bearer '+fresh}});
+    response=await fetch(API_BASE+'/'+path,{signal,cache:'no-store',headers:{Accept:'application/json',Authorization:'Bearer '+fresh}});
   }
   if(!response.ok){
     if(response.status===404)return [];
@@ -214,7 +216,7 @@ async function loadProfile() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const people = await fetchData('profiles?slug=eq.' + encodeURIComponent(PROFILE_SLUG) + '&select=id,slug,full_name,position_title,short_intro,about_me,phone_e164,whatsapp_e164,email,portrait_url,portrait_data,skills,core_competencies,company_id&limit=1', controller.signal);
+    const people = await fetchData('profiles?slug=eq.' + encodeURIComponent(PROFILE_SLUG) + '&select=id,slug,full_name,position_title,short_intro,about_me,phone_e164,whatsapp_e164,email,portrait_url,portrait_data,skills,core_competencies,company_id,updated_at&limit=1', controller.signal);
     const p = people?.[0];
     if(!p) return showError('Profile not yet published','This staff profile is being prepared. Please check again after the card is approved.');
     const [companies,experience,links] = await Promise.all([
@@ -223,6 +225,7 @@ async function loadProfile() {
       fetchData('profile_links?profile_id=eq.' + encodeURIComponent(p.id) + '&select=platform,label,url&order=display_order.asc',controller.signal)
     ]);
     if(!companies?.[0]) throw new Error('The company details are currently unavailable.');
+    lastPublicUpdatedAt=p.updated_at||null;
     renderProfile({...p,company:companies[0],experience,links});
   } catch (error) {
     showError('Profile unavailable',error.name === 'AbortError' ? 'The request took too long. Please try again.' : error.message);
@@ -239,3 +242,22 @@ $('shareBtn')?.addEventListener('click', async () => {
   } catch (error) { if (error.name !== 'AbortError') toast('Unable to share right now'); }
 });
 loadProfile().catch(() => showError('Profile unavailable','Please try again.'));
+
+async function checkPublishedUpdates(){
+ if(!PROFILE_SLUG || refreshInProgress || !lastPublicUpdatedAt || document.visibilityState==='hidden')return;
+ refreshInProgress=true;
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),8000);
+ try{
+  const rows=await fetchData('profiles?slug=eq.'+encodeURIComponent(PROFILE_SLUG)+'&select=updated_at&limit=1',controller.signal);
+  if(!rows?.length || rows[0].updated_at!==lastPublicUpdatedAt)window.location.reload();
+ }catch(_err){
+  // Leave the visible profile usable during temporary network interruptions.
+ }finally{clearTimeout(timer);refreshInProgress=false}
+}
+window.addEventListener('focus',checkPublishedUpdates);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible')checkPublishedUpdates();
+});
+window.setInterval(checkPublishedUpdates,20000);
+
