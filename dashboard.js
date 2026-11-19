@@ -27,7 +27,7 @@ async function api(path,{method='GET',body,auth=true}={}){
   const headers={'Accept':'application/json'};
   if(auth)headers.Authorization='Bearer '+await getToken();
   if(body!==undefined){headers['Content-Type']='application/json';headers.Prefer='return=representation'}
-  const res=await fetch(DATA+'/'+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
+  const res=await fetch(DATA+'/'+path,{method,headers,cache:'no-store',body:body===undefined?undefined:JSON.stringify(body)});
   const text=await res.text();let value=null;try{value=text?JSON.parse(text):null}catch{value=text}
   if(!res.ok)throw new Error(value?.message||value?.hint||value?.error||('Database request failed ('+res.status+')'));
   return value;
@@ -86,7 +86,7 @@ function action(label,cb,options={}){
   const button=document.createElement('button');button.type='button';button.className=options.className||'action-btn';
   button.textContent=label;button.disabled=Boolean(options.disabled);
   if(options.title)button.title=options.title;
-  button.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();if(button.disabled)return;button.disabled=true;try{await cb()}finally{button.disabled=false}});
+  button.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();if(button.disabled)return;button.disabled=true;try{await cb()}catch(error){toast('Action failed: '+error.message)}finally{button.disabled=false}});
   return button;
 }
 function rowFor(p,{archived=false}={}){
@@ -202,8 +202,7 @@ async function restoreProfile(p){
  await mutateProfile(p,{status:'draft',deleted_at:null},'Profile restored to draft.');
 }
 function openLive(p){
- const win=window.open(viewUrl(p),'_blank','noopener,noreferrer');
- if(!win)toast('Allow pop-ups for this site, or copy the live link instead.');
+ const link=document.createElement('a');link.href=viewUrl(p);link.target='_blank';link.rel='noopener noreferrer';document.body.appendChild(link);link.click();link.remove();
 }
 async function copyLink(p){
  try{await navigator.clipboard.writeText(viewUrl(p));toast('Live profile link copied.')}catch{window.prompt('Copy live profile link:',viewUrl(p))}
@@ -331,37 +330,40 @@ async function createPhotoData(file){
 }
 async function saveEditor(event){
  event.preventDefault();
- const b=$('saveProfile');b.disabled=true;b.textContent='Saving...';msg('editorMessage','Saving your changes...');
+ const button=$('saveProfile');button.disabled=true;button.textContent='Saving...';msg('editorMessage','Saving changes securely to Neon...');
+ let saved=false;
  try{
-  const form=$('editForm'),values=Object.fromEntries(new FormData(form).entries());
-  const full_name=values.full_name.trim(),position_title=values.position_title.trim();
+  if(editing?.is_frozen)throw new Error('This profile is frozen. Unfreeze it first.');
+  const fields=Object.fromEntries(new FormData($('editForm')).entries());
+  const full_name=String(fields.full_name||'').trim(),position_title=String(fields.position_title||'').trim();
   if(!full_name||!position_title)throw new Error('Full name and professional title are required.');
-  const experiences=parseExperience(values.experience||''),links=parseLinks(values.links||'');
-  const details={full_name,position_title,
-   phone_e164:normalizePhone(values.phone_e164),whatsapp_e164:normalizePhone(values.whatsapp_e164),
-   email:values.email.trim()||null,short_intro:values.short_intro.trim()||null,
-   about_me:values.about_me.trim()||null,
-   skills:toList(values.skills||''),core_competencies:toList(values.core_competencies||'')};
-  if(newPhoto)details.portrait_data=newPhoto;
-  let id=editing?.id;
-  if(!editing){
-   if(people.length>=5)throw new Error('This company package includes five staff profiles.');
-   const slug=full_name.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-   if(!slug)throw new Error('Please enter a name with letters for the profile URL.');
-   const created=await api('profiles',{method:'POST',body:{...details,company_id:company.id,slug,status:'draft'}});
-   id=created?.[0]?.id;if(!id)throw new Error('New profile could not be confirmed.');
-  }else{
-   await api('profiles?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:details});
-  }
-  await api('profile_experience?profile_id=eq.'+encodeURIComponent(id),{method:'DELETE'});
-  if(experiences.length)await api('profile_experience',{method:'POST',body:experiences.map(e=>({...e,profile_id:id}))});
-  await api('profile_links?profile_id=eq.'+encodeURIComponent(id),{method:'DELETE'});
-  if(links.length)await api('profile_links',{method:'POST',body:links.map(l=>({...l,profile_id:id}))});
-  $('editDialog').close();await loadDashboard();toast('Profile saved successfully to Neon.');
- }catch(error){msg('editorMessage','Save failed: '+error.message)}
- finally{b.disabled=false;b.textContent='Save changes'}
+  const activeCount=activeProfiles().length;
+  if(!editing&&activeCount>=5)throw new Error('This package contains five active staff profiles. Archive a profile before adding another.');
+  const slug=full_name.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  if(!slug)throw new Error('Enter a name containing letters to create the profile URL.');
+  const p_fields={
+   full_name,position_title,
+   phone_e164:normalizePhone(fields.phone_e164),whatsapp_e164:normalizePhone(fields.whatsapp_e164),
+   email:String(fields.email||'').trim()||null,
+   short_intro:String(fields.short_intro||'').trim()||null,
+   about_me:String(fields.about_me||'').trim()||null,
+   skills:toList(fields.skills),core_competencies:toList(fields.core_competencies)
+  };
+  if(newPhoto)p_fields.portrait_data=newPhoto;
+  const p_experience=collectExperience(),p_links=collectSocials();
+  await api('rpc/qbranch_save_profile',{method:'POST',body:{
+   p_id:editing?.id||null,p_slug:editing?.slug||slug,p_company_id:company.id,
+   p_fields,p_experience,p_links
+  }});
+  saved=true;$('editDialog').close();
+  await loadDashboard();
+  toast('Profile saved. Published pages show the newest details immediately on reload.');
+ }catch(error){
+  const message='Save failed: '+error.message;
+  if(saved){toast('Changes saved, but refreshing the dashboard failed.');}
+  else msg('editorMessage',message);
+ }finally{button.disabled=false;button.textContent='Save profile';}
 }
-
 async function authorizeAndOpen(){
   verifiedSession=await authRequest('/get-session');
   if(!verifiedSession?.user?.email)throw new Error('Sign in could not be confirmed. Please try again.');
@@ -428,18 +430,47 @@ function paintCodeAtmosphere(){
 }
 paintCodeAtmosphere();
 $('signOut').addEventListener('click',async()=>{try{await authRequest('/sign-out','POST',{});}catch{}people=[];verifiedSession=null;showLogin('You have signed out.')});
+function navigateTo(view){
+ setView(view);
+}
+for(const view of VIEWS){
+ const nav=$('nav'+view.charAt(0).toUpperCase()+view.slice(1));
+ nav?.addEventListener('click',event=>{event.preventDefault();navigateTo(view)});
+}
+window.addEventListener('hashchange',()=>{
+ if(!$('dashboard').hidden)setView(location.hash.replace(/^#/,'')||'overview',false);
+});
 $('addProfile').addEventListener('click',()=>openEditor(null));
-$('refresh').addEventListener('click',()=>loadDashboard().catch(e=>toast('Refresh failed: '+e.message)));
+$('overviewAddProfile').addEventListener('click',()=>{setView('team');openEditor(null)});
+$('manageFromOverview').addEventListener('click',()=>setView('team'));
+$('openLinksFromOverview').addEventListener('click',()=>setView('links'));
+$('openArchiveFromOverview').addEventListener('click',()=>setView('archive'));
+for(const id of ['refresh','refreshLinks'])$(id).addEventListener('click',()=>loadDashboard().catch(error=>toast('Refresh failed: '+error.message)));
 $('search').addEventListener('input',render);
+$('addExperience').addEventListener('click',()=>addExperienceRow());
+$('addSocial').addEventListener('click',()=>addSocialRow({platform:'Instagram'}));
 $('editForm').addEventListener('submit',saveEditor);
 $('closeEditor').addEventListener('click',()=>$('editDialog').close());
 $('cancelEditor').addEventListener('click',()=>$('editDialog').close());
 $('closeQr').addEventListener('click',()=>$('qrDialog').close());
-$('copyQrLink').addEventListener('click',()=>currentQr&&navigator.clipboard.writeText(currentQr).then(()=>toast('Link copied')));
+$('copyQrLink').addEventListener('click',async()=>{
+ if(!currentQr)return;
+ try{await navigator.clipboard.writeText(currentQr);toast('Link copied.')}catch{window.prompt('Copy live profile URL:',currentQr)}
+});
 $('photoFile').addEventListener('change',async event=>{
  const file=event.target.files?.[0];if(!file)return;
  $('photoInfo').textContent='Optimizing image...';
- try{newPhoto=await createPhotoData(file);$('photoPreview').innerHTML='<img alt="New cropped portrait" src="'+newPhoto+'">';$('photoInfo').textContent='Portrait ready to save · '+Math.round(newPhoto.length*0.75/1024)+' KB';}
- catch(error){newPhoto=null;msg('editorMessage',error.message);$('photoInfo').textContent='Image not accepted.'}
+ try{
+  newPhoto=await createPhotoData(file);
+  const preview=$('photoPreview');preview.replaceChildren();
+  const img=document.createElement('img');img.alt='New optimized portrait';img.src=newPhoto;preview.appendChild(img);
+  $('photoInfo').textContent='Portrait ready · '+Math.round(newPhoto.length*.75/1024)+' KB';
+ }catch(error){newPhoto=null;msg('editorMessage',error.message);$('photoInfo').textContent='Image not accepted.'}
+});
+let lastRefresh=0;
+window.addEventListener('focus',()=>{
+ if(!$('dashboard').hidden && !document.querySelector('dialog[open]') && Date.now()-lastRefresh>10000){
+  lastRefresh=Date.now();loadDashboard().catch(()=>{});
+ }
 });
 begin();
