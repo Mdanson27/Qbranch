@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <base href="/Qbranch/">
+  <meta name="theme-color" content="#15388e">
+  <meta name="description" content="Professional digital profiles for Qbranch Uganda Limited. Bringing Life to Technology.">
+  <meta name="qbranch-api-base" content="">
+  <title>Qbranch Uganda Limited | Professional Profile</title>
+  <link rel="icon" type="image/png" href="Qbranch-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="final.css">
+  <link rel="stylesheet" href="obed.css">
+  <link rel="stylesheet" href="qbranch-shared.css">
+</head>
+<body class="loading">
+  <div class="loader qb-typing-loader" id="loader" role="status" aria-label="Introducing your Qbranch profile">
+    <div class="typing-atmosphere" aria-hidden="true"></div>
+    <div class="intro-shell">
+      <div class="intro-overline">QBRANCH UGANDA LIMITED <span class="intro-overline-line"></span> PROFESSIONAL PROFILE</div>
+      <p class="intro-role"><span class="intro-typed" id="introRoleText"></span><span class="intro-cursor" aria-hidden="true"></span></p>
+      <h2 class="intro-name"><span class="intro-typed" id="introNameText"></span><span class="intro-cursor" aria-hidden="true"></span></h2>
+      <div class="intro-rule" aria-hidden="true"><span></span></div>
+      <p class="intro-tagline">BRINGING LIFE TO TECHNOLOGY</p>
+    </div>
+  </div>
+  <div id="profileError" class="profile-error" role="alert" hidden>
+    <img src="Qbranch-logo.png" alt="Qbranch Uganda Limited" width="110" height="110">
+    <h1 id="errorTitle">Profile unavailable</h1>
+    <p id="errorMessage">The requested profile could not be loaded.</p>
+    <button type="button" id="retryButton" class="primary-action">Try again</button>
+  </div>
+  <main class="profile-shell" id="profile" hidden>
+    <section class="panel hero" id="home">
+      <div class="flag-line" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="topbar">
+        <a class="brand qb-brand" href="#home">
+          <img src="Qbranch-logo.png" class="qb-brand-logo" alt="Qbranch Uganda Limited official logo" width="76" height="66">
+          <span class="qb-brand-text"><strong>QBRANCH</strong><small>UGANDA LIMITED</small></span>
+        </a>
+        <div class="top-actions">
+          <button type="button" class="icon-button share-icon-button" id="shareBtn" aria-label="Share this profile" title="Share profile">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 12.9l6.8 4M15.4 7l-6.8 4m10.9-5.9a2.6 2.6 0 11-5.2 0 2.6 2.6 0 015.2 0zM9.7 12a2.6 2.6 0 11-5.2 0 2.6 2.6 0 015.2 0zm9.8 6.9a2.6 2.6 0 11-5.2 0 2.6 2.6 0 015.2 0z"/></svg>
+          </button>
+          <a class="pill-button" id="headerContact" href="#contact">Contact</a>
+        </div>
+      </header>
+      <div class="hero-grid container">
+        <div class="hero-copy">
+          <div class="status"><span></span> Welcome to My Digital Profile</div>
+          <p class="kicker">QBRANCH UGANDA LIMITED · KAMPALA</p>
+          <h1 id="heroName"></h1>
+          <p class="hero-title" id="heroTitle"></p>
+          <p class="hero-intro" id="heroIntro"></p>
+          <div class="hero-actions" id="heroActions"></div>
+        </div>
+        <div class="portrait-wrap">
+          <div class="portrait-frame">
+            <img class="portrait" id="portrait" alt="" width="640" height="640" decoding="async" fetchpriority="high">
+            <div class="portrait-overlay"></div>
+            <div class="portrait-caption"><small id="portraitRole"></small><strong id="portraitName"></strong><span>Qbranch Uganda Limited</span></div>
+          </div>
+          <div class="pap-seal qb-seal" aria-hidden="true"><img src="Qbranch-logo.png" alt="" width="90" height="90"></div>
+        </div>
+      </div>
+    </section>
+    <section class="panel service" id="experience">
+      <div class="section-watermark" aria-hidden="true">QBRANCH</div>
+      <div class="container service-layout">
+        <div class="section-heading">
+          <p class="kicker">MY EXPERIENCE &amp; WORK</p>
+          <h2>Let me share a little about <em>my work.</em></h2>
+          <p id="aboutText"></p>
+          <p class="areas-heading" id="competenciesLabel">MY SKILLS &amp; CORE COMPETENCIES</p>
+          <div class="competencies" id="competencies"></div>
+        </div>
+        <div class="leadership-card">
+          <div class="card-label">A LITTLE ABOUT ME</div>
+          <div class="current-grid" id="experienceSummary"></div>
+          <div class="past-label">MY PROFESSIONAL EXPERIENCE</div>
+          <div class="career-grid" id="careerGrid"></div>
+          <a class="qb-company-link" id="companyWebsite" target="_blank" rel="noopener noreferrer">Explore our Qbranch website <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
+    <section class="panel connect" id="contact">
+      <div class="container connect-layout">
+        <div class="connect-copy">
+          <div class="qb-connect-mark"><img src="Qbranch-logo.png" alt="Qbranch Uganda Limited" width="76" height="76"><span><strong>QBRANCH</strong><small>UGANDA LIMITED</small></span></div>
+          <p class="kicker">LET’S CONNECT</p>
+          <h2>I’d love to <em>hear from you.</em></h2>
+          <p id="connectText">I'd be pleased to connect with you. Please reach out using my contact details.</p>
+        </div>
+        <div class="contact-card"><div id="contactRows"></div><button type="button" class="vcard-button" id="saveContactBottom">Save My Contact</button></div>
+      </div>
+      <footer class="profile-footer"><div class="profile-footer-inner">
+        <a class="autominds-signature" href="https://automindsafrica.com" target="_blank" rel="noopener noreferrer" aria-label="Made by AutoMinds Africa">
+          <span class="signature-bulb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M8.1 14.5A6 6 0 1 1 15.9 14.5c-.8.7-1.2 1.4-1.4 2.5h-5c-.2-1.1-.6-1.8-1.4-2.5Z"/></svg></span>
+          <span class="signature-copy"><small>MADE BY</small><strong>AutoMinds Africa</strong></span>
+        </a>
+      </div></footer>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
