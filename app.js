@@ -1,6 +1,6 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
-const API_BASE = (document.querySelector('meta[name="qbranch-api-base"]')?.content || '').replace(/\/+$/, '');
+const API_BASE = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.neon.tech/qbranch_profiles/rest/v1';
 const PROFILE_SLUG = (() => {
   const match = window.location.pathname.match(/\/p\/([a-z0-9-]+)\/?$/i);
   return match ? match[1].toLowerCase() : new URLSearchParams(window.location.search).get('profile');
@@ -130,7 +130,7 @@ function renderProfile(p) {
   setText('heroIntro',p.short_intro);
   setText('portraitRole',p.position_title.toUpperCase());
   setText('portraitName',p.full_name);
-  const imageUrl = safeUrl(p.portrait_url);
+  const imageUrl = (/^data:image\/(webp|jpeg);base64,[A-Za-z0-9+/=]+$/.test(p.portrait_data||'') ? p.portrait_data : null) || safeUrl(p.portrait_url);
   if (imageUrl) {
     $('portrait').alt = 'Portrait of ' + p.full_name;
     $('portrait').addEventListener('error', () => {
@@ -177,18 +177,27 @@ function renderProfile(p) {
   $('profileError').hidden = true;
   animateIntro(p.position_title,p.full_name).catch(endLoader);
 }
+async function fetchData(path, signal) {
+  const response = await fetch(API_BASE + '/' + path, {signal,headers:{Accept:'application/json'}});
+  if(!response.ok) throw new Error('The profile service is temporarily unavailable (' + response.status + ').');
+  return response.json();
+}
 async function loadProfile() {
-  if (!PROFILE_SLUG) return showError('Qbranch Digital Profiles','Open an individual profile using the QR code on the staff member’s card.');
+  if (!PROFILE_SLUG) return showError('Qbranch Digital Profiles','Visit the management dashboard to manage Qbranch staff profiles.');
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(PROFILE_SLUG)) return showError('Invalid profile link','Please check the profile URL.');
-  if (!API_BASE) return showError('Profile system being configured','The secure profile API has not yet been connected. Profiles will appear here after setup and approval.');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(API_BASE + '?slug=' + encodeURIComponent(PROFILE_SLUG),{signal:controller.signal,headers:{Accept:'application/json'}});
-    if (!response.ok) throw new Error(response.status === 404 ? 'This profile has not yet been published.' : 'The profile service is temporarily unavailable.');
-    const body = await response.json();
-    if (!body.profile) throw new Error('The profile response is incomplete.');
-    renderProfile(body.profile);
+    const people = await fetchData('profiles?slug=eq.' + encodeURIComponent(PROFILE_SLUG) + '&select=id,slug,full_name,position_title,short_intro,about_me,phone_e164,whatsapp_e164,email,portrait_url,portrait_data,skills,core_competencies,company_id&limit=1', controller.signal);
+    const p = people?.[0];
+    if(!p) return showError('Profile not yet published','This staff profile is being prepared. Please check again after the card is approved.');
+    const [companies,experience,links] = await Promise.all([
+      fetchData('companies?id=eq.' + encodeURIComponent(p.company_id) + '&select=display_name,website_url,office_address,logo_path,tagline&limit=1',controller.signal),
+      fetchData('profile_experience?profile_id=eq.' + encodeURIComponent(p.id) + '&select=organization,position_title,start_year,end_year,is_current&order=display_order.asc',controller.signal),
+      fetchData('profile_links?profile_id=eq.' + encodeURIComponent(p.id) + '&select=platform,label,url&order=display_order.asc',controller.signal)
+    ]);
+    if(!companies?.[0]) throw new Error('The company details are currently unavailable.');
+    renderProfile({...p,company:companies[0],experience,links});
   } catch (error) {
     showError('Profile unavailable',error.name === 'AbortError' ? 'The request took too long. Please try again.' : error.message);
   } finally { clearTimeout(timeout); }
