@@ -2,7 +2,6 @@
 const AUTH = 'https://ep-nameless-cherry-bet0ev73.neonauth.c-9.us-east-2.aws.neon.tech/qbranch_profiles/auth';
 const DATA = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.neon.tech/qbranch_profiles/rest/v1';
 const SITE = 'https://mdanson27.github.io/Qbranch';
-const ADMIN_EMAIL = 'automindsafrica@gmail.com';
 const $ = s => document.getElementById(s);
 let people=[], company=null, editing=null, newPhoto=null, verifiedSession=null, currentQr=null;
 const ESC = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10,8 +9,8 @@ const urlFor = slug => SITE + '/p/?profile=' + encodeURIComponent(slug);
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.classList.remove('show'),3000)}
 function msg(id,message,success=false){const el=$(id);el.textContent=message;el.classList.toggle('success',success)}
 function hideLoading(){ $('loadingState').hidden=true }
-function showLogin(message=''){hideLoading();$('dashboard').hidden=true;$('authScreen').hidden=false;$('signOut').hidden=true;msg('authMessage',message)}
-function showDashboard(){hideLoading();$('dashboard').hidden=false;$('authScreen').hidden=true;$('signOut').hidden=false;$('accountEmail').textContent=verifiedSession?.user?.email||''}
+function showLogin(message=''){hideLoading();document.body.classList.add('auth-mode');$('dashboard').hidden=true;$('authScreen').hidden=false;$('signOut').hidden=true;$('accountEmail').textContent='';msg('authMessage',message)}
+function showDashboard(){hideLoading();document.body.classList.remove('auth-mode');$('dashboard').hidden=false;$('authScreen').hidden=true;$('signOut').hidden=false;$('accountEmail').textContent=verifiedSession?.user?.email||''}
 async function authRequest(path,method='GET',body){
   const res=await fetch(AUTH+path,{method,credentials:'include',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
   let data;try{data=await res.json()}catch{data=null}
@@ -190,43 +189,72 @@ async function saveEditor(event){
  }catch(error){msg('editorMessage','Save failed: '+error.message)}
  finally{b.disabled=false;b.textContent='Save changes'}
 }
-$('loginForm').addEventListener('submit',async event=>{
- event.preventDefault();msg('authMessage','Signing in...');
- const email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value;
- if(email!==ADMIN_EMAIL)return msg('authMessage','Only the authorized AutoMinds administrator can access this workspace.');
- try{
-  await authRequest('/sign-in/email','POST',{email,password});verifiedSession=await authRequest('/get-session');
-  const allowed=await api('rpc/is_qbranch_admin',{method:'POST',body:{}});
-  if(allowed!==true)throw new Error('This account has not yet been verified or authorized.');
-  await loadDashboard();
- }catch(error){msg('authMessage',error.message)}
-});
-$('registerBtn').addEventListener('click',async ()=>{
- const email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value;
- if(email!==ADMIN_EMAIL)return msg('authMessage','To register, enter the authorized AutoMinds administrator email.');
- if(password.length<8)return msg('authMessage','Enter a password with at least eight characters.');
- msg('authMessage','Creating the account and requesting an email code...');
- try{
-  await authRequest('/sign-up/email','POST',{name:'AutoMinds Africa Administrator',email,password});
-  $('otpArea').hidden=false;msg('authMessage','Account created. Enter the verification code sent to '+email,true);
- }catch(error){msg('authMessage',error.message)}
-});
-$('verifyOtp').addEventListener('click',async ()=>{
- const email=$('authEmail').value.trim().toLowerCase(),otp=$('otpCode').value.trim();
- if(!otp)return msg('authMessage','Enter the verification code.');
- try{
-  await authRequest('/email-otp/verify-email','POST',{email,otp});
-  msg('authMessage','Email verified. Signing in...',true);
-  await authRequest('/sign-in/email','POST',{email,password:$('authPassword').value});
+
+async function authorizeAndOpen(){
   verifiedSession=await authRequest('/get-session');
+  if(!verifiedSession?.user?.email)throw new Error('Sign in could not be confirmed. Please try again.');
   const allowed=await api('rpc/is_qbranch_admin',{method:'POST',body:{}});
-  if(allowed!==true)throw new Error('Email verified, but the account does not have management permission.');
+  if(allowed!==true)throw new Error('Your account is not an authorized Qbranch administrator. Contact AutoMinds Africa for access.');
   await loadDashboard();
- }catch(error){msg('authMessage',error.message)}
+}
+$('loginForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button=$('loginBtn'), email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value;
+  if(!email || !password)return msg('authMessage','Enter your email and password.');
+  button.disabled=true;
+  msg('authMessage','Signing in securely...');
+  try{
+    await authRequest('/sign-in/email','POST',{email,password});
+    await authorizeAndOpen();
+  }catch(error){msg('authMessage',error.message)}
+  finally{button.disabled=false}
 });
-$('resendOtp').addEventListener('click',async ()=>{
- try{await authRequest('/email-otp/send-verification-otp','POST',{email:$('authEmail').value.trim(),type:'email-verification'});msg('authMessage','A new code has been sent.',true)}catch(error){msg('authMessage',error.message)}
+$('googleSignIn').addEventListener('click',async()=>{
+  const button=$('googleSignIn');
+  button.disabled=true;
+  msg('authMessage','Connecting to Google...');
+  try{
+    const result=await authRequest('/sign-in/social','POST',{
+      provider:'google',
+      callbackURL:SITE+'/'
+    });
+    const redirect=result?.url||result?.data?.url;
+    if(result?.redirect===false){await authorizeAndOpen();return;}
+    if(typeof redirect!=='string'||!redirect.startsWith('https://'))throw new Error('Google sign-in could not be started. Check the Google OAuth provider configuration.');
+    window.location.assign(redirect);
+  }catch(error){msg('authMessage',error.message)}
+  finally{button.disabled=false}
 });
+function paintCodeAtmosphere(){
+  const root=$('codeAtmosphere');if(!root)return;
+  const snippets=[
+    'const profile = await load();','SELECT * FROM profiles;',
+    'if (authorized) publish();','{ name, title, contact }',
+    'await syncDigitalCard();','function verifyIdentity() {',
+    'return secureSession;','<CardProfile verified />',
+    'const status = "ACTIVE";','await connectToNeon();',
+    'profile.skills.map(render);','if (valid) return true;',
+    'const link = new URL(id);','scan → connect → share;',
+    'db.query("profiles");','// QBRANCH · TECHNOLOGY',
+    'const secure = true;','{ role: "administrator" }'
+  ];
+  const count=15;
+  for(let i=0;i<count;i++){
+    const column=document.createElement('div');
+    column.className='code-column'+(i%3===0?' up':'');
+    column.style.setProperty('--x',((i+.15)*100/count-5).toFixed(2)+'%');
+    column.style.setProperty('--duration',(28+(i*7)%21)+'s');
+    column.style.setProperty('--delay','-'+((i*11)%36)+'s');
+    column.style.setProperty('--opacity',(0.07+((i*3)%6)*0.019).toFixed(3));
+    for(let j=0;j<16;j++){
+      const line=document.createElement('span');
+      line.textContent=snippets[(i*7+j*5)%snippets.length];
+      column.appendChild(line);
+    }
+    root.appendChild(column);
+  }
+}
+paintCodeAtmosphere();
 $('signOut').addEventListener('click',async()=>{try{await authRequest('/sign-out','POST',{});}catch{}people=[];verifiedSession=null;showLogin('You have signed out.')});
 $('addProfile').addEventListener('click',()=>openEditor(null));
 $('refresh').addEventListener('click',()=>loadDashboard().catch(e=>toast('Refresh failed: '+e.message)));
