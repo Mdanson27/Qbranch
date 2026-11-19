@@ -6,7 +6,7 @@ const ADMIN_EMAIL = 'automindsafrica@gmail.com';
 const $ = s => document.getElementById(s);
 let people=[], company=null, editing=null, newPhoto=null, verifiedSession=null, currentQr=null;
 const ESC = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const urlFor = slug => SITE + '/p/' + slug + '/';
+const urlFor = slug => SITE + '/p/?profile=' + encodeURIComponent(slug);
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.classList.remove('show'),3000)}
 function msg(id,message,success=false){const el=$(id);el.textContent=message;el.classList.toggle('success',success)}
 function hideLoading(){ $('loadingState').hidden=true }
