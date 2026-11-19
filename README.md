@@ -1,37 +1,41 @@
-# Qbranch Uganda Limited — Digital Profiles
+# Qbranch Uganda Limited — Digital Profile Manager
 
-Built by **AutoMinds Africa**. A reusable frontend derived from the approved Namanya Obed Collins experience.
+Built by AutoMinds Africa.
 
-## Current state
+## Live locations
+- Dashboard: https://mdanson27.github.io/Qbranch/
+- Dynamic public profiles: https://mdanson27.github.io/Qbranch/p/?profile=staff-slug
+- Legacy individual paths for Brian and Himbisa remain available.
 
-- Two staff records exist as **drafts in Neon**, without photographs: Kiseera Brian Peter and Himbisa Alex Tumushabe.
-- The Qbranch logo is reused from the existing repository. The four approved Collins CSS layers are copied and a shared override adds circular portraits.
-- Static frontend source is designed for GitHub Pages; serverless API source is in netlify/functions/profile.mjs.
-- **Not yet deployed or published.** Set up the Netlify API, a server-only DATABASE_URL, and the frontend's qbranch-api-base meta URL before publishing.
-- The API only returns published records with portrait URLs. No Neon secrets should be checked into the repository.
-- Do not change the separate Mdanson27/collin-card repository.
+## Architecture
+- Static GitHub Pages frontend on main branch.
+- Neon Auth (managed Better Auth) provides email/password and email OTP verification.
+- Neon Data API reads and updates Qbranch records; PostgreSQL row-level security protects private draft data.
+- Authorized verified administrator email: automindsafrica@gmail.com.
+- Neon PostgreSQL project: Qbranch Digital Profiles — AutoMinds Africa.
+- Database: qbranch_profiles. Tables: companies, profiles, profile_experience, profile_links, profile_admins, profile_audit_log.
+- Portraits: client-side optimized 640x640 WebP images saved into profiles.portrait_data (350,000-character database limit).
+- Planned alternative: Neon object storage bucket qbranch-portraits exists but is not used by the current portrait uploader.
+- Public profile pages only retrieve published profiles that have a portrait.
+- The existing Collins repository was not modified.
 
-## Public routes
+## First-time dashboard use
+1. Open the dashboard and enter automindsafrica@gmail.com and a new password (at least eight characters).
+2. Select First time? Create administrator account.
+3. Neon Auth sends a verification code; enter it to verify the email.
+4. Sign in and access staff profiles. Permissions are enforced by Neon RLS and checked in the database.
 
-Once GitHub Pages is configured and the serverless API deployed:
+## Staff workflow
+- Two initial drafts: Kiseera Brian Peter and Himbisa Alex Tumushabe.
+- Add the remaining three staff profiles from the dashboard.
+- Edit personal information, experience, skills, and contacts. Upload portraits.
+- Save, then Publish to unlock the profile's live link and unique QR code.
+- Unpublish if a record must be hidden.
 
-- /Qbranch/p/kiseera-brian-peter/
-- /Qbranch/p/himbisa-alex-tumushabe/
+## Deployment and testing
+- Publish the main branch from the repository root in GitHub Pages.
+- Check GitHub Actions Pages build and deployment status after changes.
+- Browser testing of registration, verification emails, upload, Data API, and QR codes must be completed before distributing physical NFC cards.
+- A legacy Netlify function scaffold remains unused and is not wired to the live frontend.
 
-Routes above are **planned, not yet live**.
-
-## Deployment
-
-1. Deploy this repository to Netlify for the serverless function (or another secure Functions host).
-2. Add the pooled Neon DATABASE_URL as a **secret server-side environment variable** on the API host, with access to the qbranch_profiles database; never add it to GitHub Pages HTML/JS.
-3. Configure the GitHub Pages frontend meta tag "qbranch-api-base" with the HTTPS serverless endpoint ending in /.netlify/functions/profile.
-4. Create all 5 verified portrait assets, assign each image URL in Neon, validate staff data and only then set status to published.
-5. Enable GitHub Pages from main, test each URL, vCard, QR destination, contacts, mobile, accessibility and loading/error states.
-
-## Database
-
-Project: Qbranch Digital Profiles — AutoMinds Africa (Neon)
-Database: qbranch_profiles
-Tables: companies, profiles, profile_experience, profile_links, profile_audit_log.
-
-All initial staff details live exclusively in Neon. Additional staff can be added as separate profile records.
+AutoMinds Africa — Work Smarter. Work Faster.
