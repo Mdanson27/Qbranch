@@ -42,13 +42,61 @@ async function begin(){
     await loadDashboard();
   }catch(error){showLogin('Sign in to manage Qbranch profiles. '+(error.message||''))}
 }
+let dashboardRequest=null;
+let dashboardLoaded=false;
+function showDataIssue(message){
+  const panel=$('dataHealth');
+  $('dataHealthText').textContent=message;
+  panel.hidden=false;
+}
+function clearDataIssue(){
+  $('dataHealth').hidden=true;
+}
 async function loadDashboard(){
- const [c,profiles]=await Promise.all([
-  api('companies?slug=eq.qbranch&select=id,display_name,office_address,website_url&limit=1'),
-  api('profiles?select=id,company_id,slug,full_name,position_title,short_intro,about_me,phone_e164,whatsapp_e164,email,skills,core_competencies,portrait_data,status,is_frozen,frozen_at,deleted_at,updated_at&order=created_at.asc')
- ]);
- company=c[0]||null;people=profiles||[];if(!company)throw new Error('The Qbranch company database record was not found.');
- showDashboard();render();setView((location.hash||'#overview').slice(1),false);
+  // A background refresh must never erase a previously successful staff list.
+  if(dashboardRequest)return dashboardRequest;
+  dashboardRequest=(async()=>{
+    let lastError;
+    for(let attempt=0;attempt<3;attempt++){
+      if(attempt)await new Promise(resolve=>setTimeout(resolve,attempt*650));
+      try{
+        // Read company and staff together, using one verified server-side admin check.
+        // The SECURITY DEFINER RPC explicitly rejects unauthorized sessions rather
+        // than allowing RLS to silently return zero rows.
+        const result=await api('rpc/qbranch_admin_snapshot',{method:'POST',body:{}});
+        const snapshot=Array.isArray(result)?result[0]:result;
+        if(!snapshot || !Array.isArray(snapshot.profiles) || !snapshot.company ||
+           !Number.isInteger(snapshot.profile_count) ||
+           snapshot.profile_count!==snapshot.profiles.length){
+          throw new Error('Profile service returned an incomplete response.');
+        }
+        if(dashboardLoaded && people.length>0 && snapshot.profile_count===0){
+          throw new Error('A previously populated directory unexpectedly returned zero profiles.');
+        }
+        const wasShowing=!$('dashboard').hidden;
+        company=snapshot.company;
+        people=snapshot.profiles;
+        dashboardLoaded=true;
+        clearDataIssue();
+        showDashboard();
+        render();
+        if(!wasShowing)setView((location.hash||'#overview').slice(1),false);
+        return true;
+      }catch(error){
+        lastError=error;
+      }
+    }
+    // Don't replace staff data with [] if the connection or session is unstable.
+    if(dashboardLoaded){
+      showDataIssue('The last refresh did not complete: '+(lastError?.message||'connection error')+
+                    '. Your previously loaded staff records are still shown. Select Retry connection.');
+      return false;
+    }
+    throw new Error('Unable to load your staff records: '+(lastError?.message||'connection error')+
+                    '. Please sign in again or refresh this page.');
+  })();
+  try{return await dashboardRequest}
+  finally{dashboardRequest=null}
 }
 
 const VIEWS=['overview','team','links','archive'];
@@ -124,7 +172,9 @@ function render(){
  const query=$('search').value.trim().toLowerCase();
  const filtered=active.filter(p=>(p.full_name+' '+p.position_title).toLowerCase().includes(query));
  const list=$('profilesList');list.replaceChildren();for(const p of filtered)list.appendChild(rowFor(p));
- $('emptyProfiles').hidden=filtered.length>0;
+ const emptyNotice=$('emptyProfiles');
+ emptyNotice.hidden=filtered.length>0;
+ emptyNotice.textContent=query?'No matching staff found for your search.': 'No active staff profiles have been created. Archived or removed profiles are listed under Archive & recovery.';
  const overview=$('overviewProfiles');overview.replaceChildren();
  for(const p of active.slice().sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at)).slice(0,5)){
   const item=document.createElement('div');item.className='overview-person';item.appendChild(pictureFor(p));
@@ -445,7 +495,7 @@ $('overviewAddProfile').addEventListener('click',()=>{setView('team');openEditor
 $('manageFromOverview').addEventListener('click',()=>setView('team'));
 $('openLinksFromOverview').addEventListener('click',()=>setView('links'));
 $('openArchiveFromOverview').addEventListener('click',()=>setView('archive'));
-for(const id of ['refresh','refreshLinks'])$(id).addEventListener('click',()=>loadDashboard().catch(error=>toast('Refresh failed: '+error.message)));
+for(const id of ['refresh','refreshLinks','retryData'])$(id).addEventListener('click',()=>loadDashboard().catch(error=>showDataIssue('Unable to refresh: '+error.message)));
 $('search').addEventListener('input',render);
 $('addExperience').addEventListener('click',()=>addExperienceRow());
 $('addSocial').addEventListener('click',()=>addSocialRow({platform:'Instagram'}));
@@ -470,7 +520,7 @@ $('photoFile').addEventListener('change',async event=>{
 let lastRefresh=0;
 window.addEventListener('focus',()=>{
  if(!$('dashboard').hidden && !document.querySelector('dialog[open]') && Date.now()-lastRefresh>10000){
-  lastRefresh=Date.now();loadDashboard().catch(()=>{});
+  lastRefresh=Date.now();loadDashboard().catch(error=>showDataIssue('Automatic refresh failed: '+error.message));
  }
 });
 begin();
