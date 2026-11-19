@@ -1,41 +1,43 @@
 # Qbranch Uganda Limited — Digital Profile Manager
 
-Built by AutoMinds Africa.
+An AutoMinds Africa project. Live dashboard: https://mdanson27.github.io/Qbranch/
 
-## Live locations
-- Dashboard: https://mdanson27.github.io/Qbranch/
-- Dynamic public profiles: https://mdanson27.github.io/Qbranch/p/?profile=staff-slug
-- Legacy individual paths for Brian and Himbisa remain available.
+## Frontend
+- GitHub Pages serves the white, protected management dashboard at `/Qbranch/`.
+- Overview, Staff profiles, Live links & QR, and Archive & recovery are separate navigation views.
+- Public links use `/Qbranch/p/?profile=<staff-slug>`, loaded dynamically from Neon.
+- Authorized admins can open the live profile directly, copy its URL, or display its QR code.
+- Profile changes are read directly from Neon, bypassing cached REST responses. Open profiles check for changes when focused and periodically.
 
-## Architecture
-- Static GitHub Pages frontend on main branch.
-- Neon Auth (managed Better Auth) provides email/password sign-in and a configured Google OAuth provider. The current Google provider uses shared development credentials; production OAuth should be tested and upgraded to client-specific credentials as needed.
-- Neon Data API reads and updates Qbranch records; PostgreSQL row-level security protects private draft data.
-- Current verified authorized administrator email: automindsafrica@gmail.com. Additional client administrators can be approved through the `profile_admins` table without changing frontend code.
-- Neon PostgreSQL project: Qbranch Digital Profiles — AutoMinds Africa.
-- Database: qbranch_profiles. Tables: companies, profiles, profile_experience, profile_links, profile_admins, profile_audit_log.
-- Portraits: client-side optimized 640x640 WebP images saved into profiles.portrait_data (350,000-character database limit).
-- Planned alternative: Neon object storage bucket qbranch-portraits exists but is not used by the current portrait uploader.
-- Public profile pages request a short-lived anonymous JWT from Neon Auth (`/token/anonymous`) before querying Neon Data API; PostgreSQL RLS restricts access to published profiles that have a portrait.
-- The existing Collins repository was not modified.
+## Backend
+- Dedicated Neon project: `autumn-band-28251766`; database: `qbranch_profiles`.
+- Neon Auth: email/password, Google provider, verified allowlisted administrators.
+- Neon Data API: JWT authenticated management, anonymous JWT for public published-only reads.
+- PostgreSQL RLS controls private draft access, verified admin management, and excludes archived/removed records from public reads.
+- `public.qbranch_save_profile` saves a staff member and all experience/social link records in one PostgreSQL transaction.
+- Profile freeze is enforced by server-side triggers on profiles, experience, and links.
+- Archive uses `status='archived'`, hiding the page while retaining content.
+- Remove is a reversible soft deletion (`deleted_at` and archived); restoration returns the profile to private draft. Hard deletes of profile records are blocked by a trigger.
+- Removing a profile requires typing the exact full name in a confirmation dialog.
+- Profile action changes are recorded through the audit trigger.
 
-## Administrator sign-in
-1. Open the white login page and sign in using the already registered AutoMinds account, or select Continue with Google.
-2. Account creation is hidden from the login UI and email/password sign-up is disabled in Neon Auth.
-3. After successful authentication, PostgreSQL checks the verified account against `profile_admins` before granting any edit privileges.
-4. To authorize a future Qbranch client admin, verify their identity and add their email to `profile_admins` using an authorized Neon administrative operation. Do not store passwords in the app or grant open signup access.
+## Editor
+- Separate, easy-to-edit form inputs for personal details and optimized portrait.
+- Individual professional experience rows (organization, role, start/end years, current).
+- Individual social account rows: choose a platform and type username, phone number, or full HTTPS URL. Handles are expanded to appropriate social URLs.
+- Save a profile while published and public visitors see the new content on their next fetch; public pages periodically check updated_at while open.
+- Publish requires a portrait. Freeze a published profile without unpublishing; unfreeze before editing or archiving.
+- Up to five active profiles. Archived or removed profiles can be restored within the active limit.
 
-## Staff workflow
-- First two profiles: Kiseera Brian Peter (draft, photograph saved) and Himbisa Alex Tumushabe (published, photograph saved), as of 19 Nov 2026.
-- Add the remaining three staff profiles from the dashboard.
-- Edit personal information, experience, skills, and contacts. Upload portraits.
-- Save, then Publish to unlock the profile's live link and unique QR code.
-- Unpublish if a record must be hidden.
+## Current staff (as of 19 November 2026)
+- Himbisa Alex Tumushabe — Administrator — published, portrait saved.
+- Kiseera Brian Peter — Procurement Officer — draft, portrait saved.
+- No changes to these two staff records were made during this dashboard upgrade.
 
-## Deployment and testing
-- Publish the main branch from the repository root in GitHub Pages.
-- Check GitHub Actions Pages build and deployment status after changes.
-- GitHub Pages build/deployment and static JavaScript syntax checks completed, and anonymous PostgreSQL RLS verified via SQL. End-to-end browser tests of Google OAuth, token retrieval, profile rendering, upload, and QR scanning remain necessary before distributing physical NFC cards.
-- A legacy Netlify function scaffold remains unused and is not wired to the live frontend.
+## Deployment testing
+- GitHub Pages publishes from `main` at repository root; verify the workflow after merging.
+- Source syntax, DOM ID bindings and Neon database grants/RLS are checked before deployment.
+- End-to-end admin login, actual profile save/upload, public QR scanning and all physical NFC cards should be tested in a real browser before delivery.
+- The original Collins reference repository remains unchanged.
 
 AutoMinds Africa — Work Smarter. Work Faster.
