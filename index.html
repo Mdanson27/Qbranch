@@ -22,6 +22,7 @@
   <a href="#overview" class="nav-item active" id="navOverview"><span class="nav-icon">▦</span> Overview</a>
   <a href="#team" class="nav-item" id="navTeam"><span class="nav-icon">♙</span> Staff profiles</a>
   <a href="#links" class="nav-item" id="navLinks"><span class="nav-icon">▤</span> Live links & QR</a>
+<a href="#archive" class="nav-item" id="navArchive"><span class="nav-icon">▣</span> Archive & recovery</a>
  </nav>
  <div class="side-bottom">
    <span class="side-overline">A PROJECT BY</span><a href="https://automindsafrica.com" target="_blank" rel="noopener noreferrer" class="agency">AutoMinds <b>Africa</b></a>
@@ -72,59 +73,55 @@
    </div>
   </section>
   <section id="dashboard" hidden>
-   <section class="intro-head" id="overview">
-      <div><div class="eyebrow">QBRANCH UGANDA LIMITED</div><h1>Digital Profile <em>Manager</em></h1><p>Manage every professional card from one secure workspace. Edit details, upload portraits and publish profiles when they're ready.</p></div>
-      <button class="primary-btn create-profile" id="addProfile" type="button"><span>＋</span> Add staff profile</button>
-   </section>
-   <div class="stats-grid" aria-label="Profile totals">
-     <div class="stat"><div class="stat-top">Total profiles <span>◉</span></div><strong id="statTotal">—</strong><small>Maximum five staff cards</small></div>
-     <div class="stat"><div class="stat-top">Published <span>↗</span></div><strong id="statPublished">—</strong><small>Available to clients and contacts</small></div>
-     <div class="stat"><div class="stat-top">In draft <span>◷</span></div><strong id="statDrafts">—</strong><small>Awaiting review or photography</small></div>
-     <div class="stat"><div class="stat-top">Photos added <span>▣</span></div><strong id="statPhotos">—</strong><small>Professional portraits assigned</small></div>
-   </div>
-   <section class="content-panel" id="team">
-      <div class="section-head"><div><span class="eyebrow">TEAM DIRECTORY</span><h2>Staff profiles</h2><p>Keep your team's information consistent and up to date.</p></div><div class="toolbar"><input type="search" id="search" placeholder="Search staff..." aria-label="Search staff profiles"><button type="button" id="refresh" class="ghost-btn">↻ Refresh</button></div></div>
-      <div id="profilesList" class="profiles-list" aria-live="polite"></div>
-      <div id="emptyProfiles" class="empty" hidden>No profiles match your search.</div>
-   </section>
-   <section class="quick-notes" id="links">
-    <div><h3>Unique public links and QR codes</h3><p>After a profile is published, its dedicated URL becomes available for sharing and encoding on the person's NFC business card. Draft profiles stay private.</p></div>
-    <div class="qr-icon" aria-hidden="true">▦</div>
-   </section>
-   <footer class="footer"><span>Qbranch Uganda Limited · Professional Digital Profiles</span><a href="https://automindsafrica.com" target="_blank" rel="noopener noreferrer">Powered by AutoMinds Africa</a></footer>
-  </section>
+<section id="overview" class="dashboard-view" data-view="overview">
+  <div class="intro-head"><div><div class="eyebrow">QBRANCH UGANDA LIMITED · WORKSPACE</div><h1>Digital Profile <em>Manager</em></h1><p>Manage, publish and protect every professional profile from one place.</p></div><button id="overviewAddProfile" class="primary-btn" type="button">＋ Add staff profile</button></div>
+  <div class="stats-grid"><div class="stat"><div class="stat-top">Active profiles <span>◉</span></div><strong id="statTotal">—</strong><small>Up to five staff profiles</small></div><div class="stat"><div class="stat-top">Published <span>↗</span></div><strong id="statPublished">—</strong><small>Available to visitors</small></div><div class="stat"><div class="stat-top">Drafts <span>◷</span></div><strong id="statDrafts">—</strong><small>Awaiting approval</small></div><div class="stat"><div class="stat-top">Frozen <span>❄</span></div><strong id="statFrozen">—</strong><small>Protected from edits</small></div></div>
+  <div class="overview-columns"><section class="content-panel"><div class="section-head"><div><span class="eyebrow">TEAM SNAPSHOT</span><h2>Your staff profiles</h2><p>View publication status at a glance.</p></div><button type="button" id="manageFromOverview" class="ghost-btn">Manage all</button></div><div id="overviewProfiles" class="overview-profiles"></div></section>
+  <div class="overview-actions"><div class="overview-action-card"><span class="eyebrow">GO LIVE</span><h3>One link. Every connection.</h3><p>Published profiles update directly from Neon. No GitHub redeployment is required for staff edits.</p><button type="button" id="openLinksFromOverview" class="primary-btn">View live links</button></div><div class="overview-action-card secondary"><span class="eyebrow">CONTROL</span><h3>Need to pause edits?</h3><p>Freeze a published profile, or archive it to take it off the web without erasing its data.</p><button type="button" id="openArchiveFromOverview" class="ghost-btn">Archive & recovery</button></div></div></div>
+</section>
+<section id="team" class="dashboard-view" data-view="team" hidden>
+  <div class="page-heading"><div class="eyebrow">STAFF MANAGEMENT</div><h1>Staff <em>Profiles</em></h1><p>Edit details, photos, contact information and experience. Publish when ready.</p></div>
+  <section class="content-panel"><div class="section-head"><div><span class="eyebrow">TEAM DIRECTORY</span><h2>Active staff</h2><p>Freeze, archive or remove profiles using the More menu.</p></div><div class="toolbar"><input type="search" id="search" placeholder="Search staff..." aria-label="Search staff profiles"><button type="button" id="refresh" class="ghost-btn">↻ Refresh</button><button type="button" id="addProfile" class="primary-btn">＋ Add staff</button></div></div><div id="profilesList" class="profiles-list" aria-live="polite"></div><div id="emptyProfiles" class="empty" hidden>No matching staff found.</div></section>
+</section>
+<section id="links" class="dashboard-view" data-view="links" hidden>
+  <div class="page-heading"><div class="eyebrow">PUBLIC PROFILES · NFC</div><h1>Live Links <em>& QR</em></h1><p>Open profiles directly, copy their URLs and generate QR destinations for the physical cards.</p></div>
+  <section class="content-panel"><div class="section-head"><div><span class="eyebrow">PUBLIC DIRECTORY</span><h2>Published profile links</h2><p>Each published link displays the latest saved details.</p></div><button type="button" id="refreshLinks" class="ghost-btn">↻ Refresh</button></div><div id="liveLinksList" class="live-links-list"></div></section>
+  <div class="quick-notes"><div><h3>Publish once. Update instantly.</h3><p>Once published, new visitors receive the newest data from Neon. A frozen profile remains live but cannot be edited until unfrozen.</p></div><div class="qr-icon">▦</div></div>
+</section>
+<section id="archive" class="dashboard-view" data-view="archive" hidden>
+  <div class="page-heading"><div class="eyebrow">CONTROL & RECOVERY</div><h1>Archive <em>& Recovery</em></h1><p>Archived cards are hidden publicly. Removed cards are soft-deleted and available for recovery.</p></div>
+  <section class="content-panel"><div class="section-head"><div><span class="eyebrow">INACTIVE RECORDS</span><h2>Archived & removed</h2><p>Restore a staff profile to draft to make it editable again.</p></div></div><div id="archiveList" class="profiles-list"></div></section>
+</section>
+<footer class="footer"><span>Qbranch Uganda Limited · Professional Digital Profiles</span><a href="https://automindsafrica.com" target="_blank" rel="noopener noreferrer">Powered by AutoMinds Africa</a></footer>
+</section>
  </main>
 </div>
 </div>
-<dialog id="editDialog" class="editor">
- <form id="editForm" method="dialog">
-  <div class="editor-head"><div><span class="eyebrow">QBRANCH PROFILE</span><h2 id="editorHeading">Edit staff profile</h2></div><button type="button" class="close-btn" id="closeEditor" aria-label="Close editor">×</button></div>
-  <div class="editor-body">
-   <div class="photo-editor">
-    <div class="photo-preview" id="photoPreview"><span>QB</span></div>
-    <div><strong>Professional portrait</strong><p>Upload a JPG, PNG or WebP. The image is resized for the circular frame before saving.</p><label class="upload-btn" for="photoFile">Choose photograph</label><input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" hidden><small id="photoInfo">No photograph selected</small></div>
-   </div>
-   <div class="form-grid">
-    <label>Full name <input name="full_name" required maxlength="120" placeholder="Full professional name"></label>
-    <label>Professional title <input name="position_title" required maxlength="120" placeholder="e.g. Procurement Officer"></label>
-    <label>Mobile number <input name="phone_e164" type="tel" placeholder="+256..."></label>
-    <label>WhatsApp number <input name="whatsapp_e164" type="tel" placeholder="+256..."></label>
-    <label class="wide">Email address <input name="email" type="email" placeholder="name@example.com"></label>
-    <label class="wide">First-person introduction <textarea name="short_intro" rows="3" placeholder="Hello, I'm..."></textarea></label>
-    <label class="wide">About me <textarea name="about_me" rows="3" placeholder="My experience and what I do..."></textarea></label>
-    <label>Skills <textarea name="skills" rows="3" placeholder="Comma-separated skills"></textarea></label>
-    <label>Core competencies <textarea name="core_competencies" rows="3" placeholder="Comma-separated competencies"></textarea></label>
-    <label class="wide">Professional experience <small>One position per line: Organization | Job title | Start year | End year (or Present). Leave unknown fields blank.</small><textarea name="experience" rows="4" placeholder="Qbranch Uganda Limited | Procurement Officer | 2024 | Present"></textarea></label>
-    <label class="wide">Social and professional links <small>One per line: Platform | Label | https://...</small><textarea name="links" rows="3" placeholder="LinkedIn | My LinkedIn profile | https://linkedin.com/in/..."></textarea></label>
-   </div>
-   <p id="editorMessage" role="status" aria-live="polite" class="message"></p>
-  </div>
-  <div class="editor-footer"><button type="button" class="ghost-btn" id="cancelEditor">Cancel</button><button type="submit" class="primary-btn" id="saveProfile">Save changes</button></div>
- </form>
-</dialog>
+<dialog id="editDialog" class="editor"><form id="editForm">
+<div class="editor-head"><div><span class="eyebrow">QBRANCH STAFF PROFILE</span><h2 id="editorHeading">Edit staff profile</h2></div><button type="button" class="close-btn" id="closeEditor" aria-label="Close editor">×</button></div>
+<div class="editor-body">
+<div class="editor-intro"><span class="eyebrow">01 · PERSONAL DETAILS</span><p>Only provide information that belongs to this staff member.</p></div>
+<div class="photo-editor"><div class="photo-preview" id="photoPreview"><span>QB</span></div><div><strong>Professional portrait</strong><p>Use JPG, PNG or WebP. Photos are optimized for the circular profile.</p><label class="upload-btn" for="photoFile">Upload photograph</label><input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" hidden><small id="photoInfo">No photograph selected</small></div></div>
+<div class="form-grid">
+<label>Full name <input name="full_name" required maxlength="120" placeholder="Full professional name"></label>
+<label>Professional title <input name="position_title" required maxlength="120" placeholder="e.g. Procurement Officer"></label>
+<label>Mobile number <input name="phone_e164" type="tel" placeholder="0700 000000"></label>
+<label>WhatsApp number <input name="whatsapp_e164" type="tel" placeholder="0700 000000"></label>
+<label class="wide">Email address <input name="email" type="email" placeholder="name@example.com"></label>
+<label class="wide">My introduction <textarea name="short_intro" rows="3" placeholder="Hello, I'm..."></textarea></label>
+<label class="wide">About me <textarea name="about_me" rows="3" placeholder="My work and expertise..."></textarea></label>
+<label>Skills <textarea name="skills" rows="3" placeholder="Skills separated by commas"></textarea></label>
+<label>Core competencies <textarea name="core_competencies" rows="3" placeholder="Competencies separated by commas"></textarea></label>
+</div>
+<div class="editor-subsection"><div class="subsection-title"><div><span class="eyebrow">02 · MY CAREER</span><h3>Professional experience</h3><p>One row per job. Unknown dates can remain blank.</p></div><button type="button" class="ghost-btn" id="addExperience">＋ Add position</button></div><div id="experienceFields" class="structured-fields"></div></div>
+<div class="editor-subsection"><div class="subsection-title"><div><span class="eyebrow">03 · CONNECT</span><h3>Social media accounts</h3><p>Just type the username, handle or number. Full links work too.</p></div><button type="button" class="ghost-btn" id="addSocial">＋ Add account</button></div><div id="socialFields" class="structured-fields"></div></div>
+<p id="editorMessage" role="status" aria-live="polite" class="message"></p>
+</div>
+<div class="editor-footer"><span class="editor-save-note">Changes appear on public profiles without redeployment.</span><button class="ghost-btn" type="button" id="cancelEditor">Cancel</button><button type="submit" class="primary-btn" id="saveProfile">Save profile</button></div>
+</form></dialog>
 <dialog id="qrDialog" class="qr-dialog">
   <div class="qr-content"><button type="button" class="close-btn" id="closeQr" aria-label="Close QR code">×</button><img src="Qbranch-logo.png" alt="Qbranch" width="65" height="65"><h2 id="qrTitle">Staff profile</h2><p>Scan to connect</p><img id="qrImage" alt="QR code for this published digital profile" width="240" height="240"><a id="qrLink" href="#" target="_blank" rel="noopener noreferrer"></a><div class="qr-buttons"><button class="primary-btn" id="copyQrLink" type="button">Copy live link</button><a class="ghost-btn" id="downloadQr" href="#" target="_blank" rel="noopener noreferrer">Open QR image</a></div></div>
 </dialog>
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<dialog id="confirmDialog" class="confirm-dialog"><div class="confirm-header"><span class="confirm-symbol">!</span><h2 id="confirmTitle">Confirm action</h2><p id="confirmMessage"></p></div><label id="confirmNameWrap" hidden>Type the full staff name to continue<input id="confirmNameInput" type="text" autocomplete="off" spellcheck="false"></label><div class="confirm-actions"><button type="button" id="confirmCancel" class="ghost-btn">Cancel</button><button type="button" id="confirmAccept" class="primary-btn">Confirm</button></div></dialog><div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
