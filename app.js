@@ -1,6 +1,8 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const API_BASE = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.neon.tech/qbranch_profiles/rest/v1';
+const AUTH_BASE = 'https://ep-nameless-cherry-bet0ev73.neonauth.c-9.us-east-2.aws.neon.tech/qbranch_profiles/auth';
+let cachedAnonymousToken = null;
 const PROFILE_SLUG = (() => {
   const match = window.location.pathname.match(/\/p\/([a-z0-9-]+)\/?$/i);
   return match ? match[1].toLowerCase() : new URLSearchParams(window.location.search).get('profile');
@@ -177,9 +179,33 @@ function renderProfile(p) {
   $('profileError').hidden = true;
   animateIntro(p.position_title,p.full_name).catch(endLoader);
 }
-async function fetchData(path, signal) {
-  const response = await fetch(API_BASE + '/' + path, {signal,headers:{Accept:'application/json'}});
-  if(!response.ok) throw new Error('The profile service is temporarily unavailable (' + response.status + ').');
+async function getAnonymousToken(signal) {
+  if(cachedAnonymousToken)return cachedAnonymousToken;
+  const response = await fetch(AUTH_BASE + '/token/anonymous', {
+    method:'GET',
+    signal,
+    headers:{Accept:'application/json'},
+    cache:'no-store'
+  });
+  if(!response.ok)throw new Error('The public profile service could not authorize this request ('+response.status+').');
+  const data=await response.json();
+  const token=data?.token||data?.data?.token;
+  if(!token||typeof token!=='string')throw new Error('The public profile service returned an invalid access token.');
+  cachedAnonymousToken=token;
+  return token;
+}
+async function fetchData(path,signal) {
+  const token=await getAnonymousToken(signal);
+  let response=await fetch(API_BASE+'/'+path,{signal,headers:{Accept:'application/json',Authorization:'Bearer '+token}});
+  if(response.status===401){
+    cachedAnonymousToken=null;
+    const fresh=await getAnonymousToken(signal);
+    response=await fetch(API_BASE+'/'+path,{signal,headers:{Accept:'application/json',Authorization:'Bearer '+fresh}});
+  }
+  if(!response.ok){
+    if(response.status===404)return [];
+    throw new Error('The profile service is temporarily unavailable ('+response.status+').');
+  }
   return response.json();
 }
 async function loadProfile() {
