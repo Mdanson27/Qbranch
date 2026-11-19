@@ -37,8 +37,7 @@ async function begin(){
     const session=await authRequest('/get-session');
     if(!session?.user?.email)return showLogin();
     verifiedSession=session;
-    const allowed=await api('rpc/is_qbranch_admin',{method:'POST',body:{}});
-    if(allowed!==true)return showLogin('This account is not authorized. Contact AutoMinds Africa to request access.');
+    // The snapshot checks administrator permissions and returns the records atomically.
     await loadDashboard();
   }catch(error){showLogin('Sign in to manage Qbranch profiles. '+(error.message||''))}
 }
@@ -417,8 +416,7 @@ async function saveEditor(event){
 async function authorizeAndOpen(){
   verifiedSession=await authRequest('/get-session');
   if(!verifiedSession?.user?.email)throw new Error('Sign in could not be confirmed. Please try again.');
-  const allowed=await api('rpc/is_qbranch_admin',{method:'POST',body:{}});
-  if(allowed!==true)throw new Error('Your account is not an authorized Qbranch administrator. Contact AutoMinds Africa for access.');
+  // Protected snapshot enforces the same admin allowlist in the database.
   await loadDashboard();
 }
 $('loginForm').addEventListener('submit',async event=>{
