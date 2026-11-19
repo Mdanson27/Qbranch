@@ -92,10 +92,8 @@ function vcardEscape(value) {
 function saveContact() {
   if (!profileData) return;
   const p = profileData;
-  const name = p.full_name.trim().split(/\s+/);
-  const surname = name.length > 1 ? name.pop() : '';
   const lines = ['BEGIN:VCARD','VERSION:3.0','FN:' + vcardEscape(p.full_name),
-    'N:' + vcardEscape(surname) + ';' + vcardEscape(name.join(' ')) + ';;;',
+    'N:;' + vcardEscape(p.full_name) + ';;;',
     'ORG:' + vcardEscape(p.company.display_name),'TITLE:' + vcardEscape(p.position_title)];
   if (p.phone_e164) lines.push('TEL;TYPE=CELL,VOICE:' + p.phone_e164);
   if (p.whatsapp_e164) lines.push('TEL;TYPE=CELL,WHATSAPP:' + p.whatsapp_e164);
@@ -133,8 +131,14 @@ function renderProfile(p) {
   setText('portraitRole',p.position_title.toUpperCase());
   setText('portraitName',p.full_name);
   const imageUrl = safeUrl(p.portrait_url);
-  if (imageUrl) { $('portrait').src = imageUrl; $('portrait').alt = 'Portrait of ' + p.full_name; }
-  else { $('portrait').hidden = true; $('portrait').parentElement.classList.add('without-portrait'); }
+  if (imageUrl) {
+    $('portrait').alt = 'Portrait of ' + p.full_name;
+    $('portrait').addEventListener('error', () => {
+      $('portrait').hidden = true;
+      $('portrait').parentElement.classList.add('without-portrait');
+    }, {once:true});
+    $('portrait').src = imageUrl;
+  } else { $('portrait').hidden = true; $('portrait').parentElement.classList.add('without-portrait'); }
   const actions = $('heroActions');
   if (p.phone_e164) linkButton(actions,'Call','tel:' + p.phone_e164,'primary-action',false);
   if (p.whatsapp_e164) linkButton(actions,'WhatsApp','https://wa.me/' + p.whatsapp_e164.replace(/\D/g,''),'secondary-action branded-action',true);
