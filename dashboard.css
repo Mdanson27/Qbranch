@@ -172,3 +172,13 @@ body.auth-mode .auth-screen{padding:24px 16px 20px}
 .link-actions .primary-btn{grid-column:1/-1}
 }
 @media(prefers-reduced-motion:reduce){.dashboard-view{animation:none!important}}
+
+
+/* Reliable profile directory: never mistake lost access for empty staff */
+.data-health{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 19px;background:#fff6e7;border:1px solid #f0d8aa;border-radius:12px;margin:0 0 22px;color:#8d5a24;box-shadow:0 8px 22px rgba(104,68,24,.05)}
+.data-health[hidden]{display:none!important}
+.data-health-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.data-health-copy strong{font-size:13px;font-weight:750;color:#81531d}
+.data-health-copy span{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.data-health .ghost-btn{border-color:#d5ae76;background:#fffdf9;color:#80511a;white-space:nowrap;flex-shrink:0}
+@media(max-width:600px){.data-health{flex-direction:column;align-items:stretch}.data-health .ghost-btn{align-self:flex-start}}
