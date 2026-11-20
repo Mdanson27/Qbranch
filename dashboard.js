@@ -19,8 +19,8 @@ async function getAuthClient(){
   if(!neonAuthClientPromise){
     neonAuthClientPromise=(async()=>{
       const sources=[
-        'https://esm.sh/@neondatabase/auth@0.7.0-beta?bundle',
-        'https://cdn.jsdelivr.net/npm/@neondatabase/auth@0.7.0-beta/+esm'
+        'https://esm.sh/@neon/neon-js@0.10.2/auth?bundle',
+        'https://esm.sh/@neon/neon-js@0.10.2/es2022/auth.bundle.mjs'
       ];
       let lastError=null;
       for(const source of sources){
@@ -62,11 +62,18 @@ function jwtRole(token){
   }catch{return 'invalid'}
 }
 async function getToken(){
-  const client=await getAuthClient();
-  const token=await client.getJWTToken?.() || (await currentSession())?.session?.token;
-  if(typeof token!=='string'||!token)throw new Error('Your session has expired. Please sign in again.');
+  // Neon Auth documents the signed Data API JWT at getSession().data.session.token.
+  // Do not call getJWTToken() first: it can use an unsupported endpoint and
+  // surface HTTP 404 even after a successful Google/password login.
+  const data=await currentSession();
+  const token=data?.session?.token;
+  if(typeof token!=='string'||!token){
+    throw new Error('The login session has expired. Please sign in again.');
+  }
   const role=jwtRole(token);
-  if(role!=='authenticated')throw new Error('The current session is not authorized for management. Sign out and sign in with an approved administrator account.');
+  if(role!=='authenticated'){
+    throw new Error('Your session is not authorized to manage profiles. Sign out and sign in with an approved administrator account.');
+  }
   return token;
 }
 async function api(path,{method='GET',body,auth=true}={}){
@@ -76,7 +83,7 @@ async function api(path,{method='GET',body,auth=true}={}){
   const res=await fetch(DATA+'/'+path,{method,headers,cache:'no-store',body:body===undefined?undefined:JSON.stringify(body)});
   const text=await res.text();let value=null;try{value=text?JSON.parse(text):null}catch{value=text}
   if(!res.ok){
-    if(res.status===401||res.status===403)throw new Error('Access denied by Neon ('+res.status+'). Your sign-in may have expired or your account may not have Qbranch permissions. Sign out and sign in again.');
+    if(res.status===401||res.status===403)throw new Error('Neon denied this request ('+res.status+'). Your session may have expired or your account lacks Qbranch administrator permission. Sign out and sign in again.');
     throw new Error(value?.message||value?.hint||value?.error||('Database request failed ('+res.status+')'));
   }
   return value;
