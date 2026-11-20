@@ -59,3 +59,13 @@ AutoMinds Africa — Work Smarter. Work Faster.
 - `netlify.toml` rewrites `/Qbranch/*` asset requests to site-root equivalents so the existing GitHub Pages `<base href="/Qbranch/">` also renders from Netlify.
 - Netlify is an independent deployment. Check the Netlify current deploy commit after a GitHub push; if it is stale, let Netlify's Git build finish before testing the Netlify URL.
 - Live account login, Google callback and POST permission flows must be verified from an actual logged-in browser before declaring end-to-end sign-in resolved.
+
+## Authentication and profile-save fix — 20 November 2026
+- Switched dashboard authentication to the official `@neon/neon-js@0.10.2/auth` SDK module.
+- Reproduced `HTTP 404 Not Found` when the prior `@neondatabase/auth@0.7.0-beta` client called `getJWTToken()`. Removed that call.
+- Neon Data API JWT now comes from the documented `getSession().data.session.token` with an `authenticated` role check.
+- Fixed the `permission denied for schema auth` profile-save failure in Neon by replacing the direct invoker-level call to `auth.user_id()` with `public.qbranch_authenticated_actor()`, a restricted `SECURITY DEFINER` helper.
+- Kept `qbranch_save_profile` as `SECURITY INVOKER`; it continues to enforce verified administrator permissions through `is_qbranch_admin()` and PostgreSQL RLS.
+- No staff photos, profile data, publication states or existing credentials were changed.
+- Tests: original JWT method reproduced HTTP 404, new SDK getSession returned no HTTP error in a no-login test, PostgreSQL authenticated role can run the helper without internal-schema access, and JavaScript syntax checks passed.
+- Real administrator sign-in and saving must still be tested from an authenticated browser session.
