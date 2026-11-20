@@ -3,3 +3,18 @@
   functions = "netlify/functions"
 [functions]
   node_bundler = "esbuild"
+
+
+# Keep the existing GitHub Pages /Qbranch/ base href working on Netlify.
+# The repository has two public locations: GitHub Pages under /Qbranch
+# and Netlify at the site root.
+[[redirects]]
+  from = "/Qbranch/*"
+  to = "/:splat"
+  status = 200
+  force = false
+
+[[headers]]
+  for = "/dashboard.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
