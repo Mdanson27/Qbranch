@@ -49,3 +49,13 @@ AutoMinds Africa — Work Smarter. Work Faster.
 - The frontend validates the complete response, retries failed requests and keeps the last valid staff list on refresh failure.
 - A connection banner offers a Retry connection button; staff search now separates no search matches from no stored profiles.
 - No existing staff records or photos were changed.
+
+## Login and host compatibility — 20 November 2026
+- The browser uses the official pinned `@neondatabase/auth@0.7.0-beta` client for email/password, Google OAuth and JWT token retrieval instead of raw `/sign-in` and `/token` calls.
+- Google OAuth callbacks now use the active host (`location.origin + location.pathname`) rather than always redirecting to GitHub Pages. The supported Neon SDK processes the one-time `neon_auth_session_verifier` and manages sessions.
+- Admin Data API requests check that the returned JWT contains `role=authenticated`; Neon RLS and verified-admin allowlist remain the final authorization gate.
+- API 401/403 errors now explain how to recover from a denied or expired session.
+- Neon Auth trusts GitHub Pages and `https://qbranch.netlify.app`; Neon Data API CORS was updated to support both environments.
+- `netlify.toml` rewrites `/Qbranch/*` asset requests to site-root equivalents so the existing GitHub Pages `<base href="/Qbranch/">` also renders from Netlify.
+- Netlify is an independent deployment. Check the Netlify current deploy commit after a GitHub push; if it is stale, let Netlify's Git build finish before testing the Netlify URL.
+- Live account login, Google callback and POST permission flows must be verified from an actual logged-in browser before declaring end-to-end sign-in resolved.
