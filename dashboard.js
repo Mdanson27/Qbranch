@@ -11,16 +11,62 @@ function msg(id,message,success=false){const el=$(id);el.textContent=message;el.
 function hideLoading(){ $('loadingState').hidden=true }
 function showLogin(message=''){hideLoading();document.body.classList.add('auth-mode');$('dashboard').hidden=true;$('authScreen').hidden=false;$('signOut').hidden=true;$('accountEmail').textContent='';msg('authMessage',message)}
 function showDashboard(){hideLoading();document.body.classList.remove('auth-mode');$('dashboard').hidden=false;$('authScreen').hidden=true;$('signOut').hidden=false;$('accountEmail').textContent=verifiedSession?.user?.email||''}
-async function authRequest(path,method='GET',body){
-  const res=await fetch(AUTH+path,{method,credentials:'include',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
-  let data;try{data=await res.json()}catch{data=null}
-  if(!res.ok)throw new Error(data?.message||data?.error?.message||data?.error||('Sign-in service returned '+res.status));
+
+// Keep authentication and OAuth callback handling in the supported Neon client.
+// The package is version-pinned; the second CDN is only a transport fallback.
+let neonAuthClientPromise=null;
+async function getAuthClient(){
+  if(!neonAuthClientPromise){
+    neonAuthClientPromise=(async()=>{
+      const sources=[
+        'https://esm.sh/@neondatabase/auth@0.7.0-beta?bundle',
+        'https://cdn.jsdelivr.net/npm/@neondatabase/auth@0.7.0-beta/+esm'
+      ];
+      let lastError=null;
+      for(const source of sources){
+        try{
+          const module=await import(source);
+          if(typeof module.createAuthClient!=='function')throw new Error('Neon authentication client is unavailable.');
+          return module.createAuthClient(AUTH);
+        }catch(error){lastError=error}
+      }
+      throw new Error('Could not initialize secure sign-in. Check your internet connection and reload the page.');
+    })().catch(error=>{neonAuthClientPromise=null;throw error});
+  }
+  return neonAuthClientPromise;
+}
+function authError(result){
+  const error=result?.error;
+  if(error)throw new Error(error.message||error.code||'Authentication could not be completed.');
+  return result?.data??result;
+}
+function clearOAuthCallback(){
+  const url=new URL(location.href);
+  if(url.searchParams.has('neon_auth_session_verifier')){
+    url.searchParams.delete('neon_auth_session_verifier');
+    history.replaceState(null,'',url.pathname+url.search+url.hash);
+  }
+}
+async function currentSession(){
+  const client=await getAuthClient();
+  const result=await client.getSession();
+  const data=authError(result);
+  if(data?.user && data?.session)clearOAuthCallback();
   return data;
 }
+function jwtRole(token){
+  try{
+    const base=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const decoded=atob(base);
+    return JSON.parse(decoded).role||'anonymous';
+  }catch{return 'invalid'}
+}
 async function getToken(){
-  const data=await authRequest('/token');
-  const token=data?.token||data?.data?.token;
-  if(!token)throw new Error('Your session has expired. Please sign in again.');
+  const client=await getAuthClient();
+  const token=await client.getJWTToken?.() || (await currentSession())?.session?.token;
+  if(typeof token!=='string'||!token)throw new Error('Your session has expired. Please sign in again.');
+  const role=jwtRole(token);
+  if(role!=='authenticated')throw new Error('The current session is not authorized for management. Sign out and sign in with an approved administrator account.');
   return token;
 }
 async function api(path,{method='GET',body,auth=true}={}){
@@ -29,13 +75,16 @@ async function api(path,{method='GET',body,auth=true}={}){
   if(body!==undefined){headers['Content-Type']='application/json';headers.Prefer='return=representation'}
   const res=await fetch(DATA+'/'+path,{method,headers,cache:'no-store',body:body===undefined?undefined:JSON.stringify(body)});
   const text=await res.text();let value=null;try{value=text?JSON.parse(text):null}catch{value=text}
-  if(!res.ok)throw new Error(value?.message||value?.hint||value?.error||('Database request failed ('+res.status+')'));
+  if(!res.ok){
+    if(res.status===401||res.status===403)throw new Error('Access denied by Neon ('+res.status+'). Your sign-in may have expired or your account may not have Qbranch permissions. Sign out and sign in again.');
+    throw new Error(value?.message||value?.hint||value?.error||('Database request failed ('+res.status+')'));
+  }
   return value;
 }
 async function begin(){
   try{
-    const session=await authRequest('/get-session');
-    if(!session?.user?.email)return showLogin();
+    const session=await currentSession();
+    if(!session?.user?.email)return showLogin('Sign in with your authorized account to manage Qbranch profiles.');
     verifiedSession=session;
     // The snapshot checks administrator permissions and returns the records atomically.
     await loadDashboard();
@@ -414,38 +463,35 @@ async function saveEditor(event){
  }finally{button.disabled=false;button.textContent='Save profile';}
 }
 async function authorizeAndOpen(){
-  verifiedSession=await authRequest('/get-session');
-  if(!verifiedSession?.user?.email)throw new Error('Sign in could not be confirmed. Please try again.');
-  // Protected snapshot enforces the same admin allowlist in the database.
-  await loadDashboard();
+  verifiedSession=await currentSession();
+  if(!verifiedSession?.user?.email)throw new Error('The sign-in session was not established. Please try again.');
+  await loadDashboard(); // Database function verifies the administrator's approved email.
 }
 $('loginForm').addEventListener('submit',async event=>{
   event.preventDefault();
-  const button=$('loginBtn'), email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value;
-  if(!email || !password)return msg('authMessage','Enter your email and password.');
-  button.disabled=true;
-  msg('authMessage','Signing in securely...');
+  const button=$('loginBtn');
+  const email=$('authEmail').value.trim().toLowerCase();
+  const password=$('authPassword').value;
+  if(!email||!password)return msg('authMessage','Enter your email and password.');
+  button.disabled=true;msg('authMessage','Signing in securely...');
   try{
-    await authRequest('/sign-in/email','POST',{email,password});
+    const client=await getAuthClient();
+    authError(await client.signIn.email({email,password}));
     await authorizeAndOpen();
-  }catch(error){msg('authMessage',error.message)}
+  }catch(error){msg('authMessage',error.message||'Sign-in failed. Please try again.')}
   finally{button.disabled=false}
 });
 $('googleSignIn').addEventListener('click',async()=>{
-  const button=$('googleSignIn');
-  button.disabled=true;
-  msg('authMessage','Connecting to Google...');
+  const button=$('googleSignIn');button.disabled=true;
+  msg('authMessage','Connecting securely to Google...');
   try{
-    const result=await authRequest('/sign-in/social','POST',{
-      provider:'google',
-      callbackURL:SITE+'/'
-    });
-    const redirect=result?.url||result?.data?.url;
-    if(result?.redirect===false){await authorizeAndOpen();return;}
-    if(typeof redirect!=='string'||!redirect.startsWith('https://'))throw new Error('Google sign-in could not be started. Check the Google OAuth provider configuration.');
-    window.location.assign(redirect);
-  }catch(error){msg('authMessage',error.message)}
-  finally{button.disabled=false}
+    const client=await getAuthClient();
+    const callbackURL=location.origin+location.pathname;
+    const response=await client.signIn.social({provider:'google',callbackURL});
+    authError(response);
+    if(response?.data?.redirect===false)await authorizeAndOpen();
+    // Neon client handles redirect and verifies the one-time callback verifier.
+  }catch(error){msg('authMessage',error.message||'Google sign-in failed.');button.disabled=false}
 });
 function paintCodeAtmosphere(){
   const root=$('codeAtmosphere');if(!root)return;
@@ -477,7 +523,7 @@ function paintCodeAtmosphere(){
   }
 }
 paintCodeAtmosphere();
-$('signOut').addEventListener('click',async()=>{try{await authRequest('/sign-out','POST',{});}catch{}people=[];verifiedSession=null;showLogin('You have signed out.')});
+$('signOut').addEventListener('click',async()=>{try{const client=await getAuthClient();authError(await client.signOut());}catch(e){toast('Unable to sign out: '+e.message);return;}people=[];verifiedSession=null;dashboardLoaded=false;clearDataIssue();showLogin('You have signed out.')});
 function navigateTo(view){
  setView(view);
 }
