@@ -3,7 +3,7 @@ const AUTH = 'https://ep-nameless-cherry-bet0ev73.neonauth.c-9.us-east-2.aws.neo
 const DATA = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.neon.tech/qbranch_profiles/rest/v1';
 const SITE = 'https://qbranch.netlify.app'; // Canonical public domain for profile links and QR codes
 const $ = s => document.getElementById(s);
-let people=[], company=null, editing=null, newPhoto=null, verifiedSession=null, currentQr=null;
+let people=[], cards=[], company=null, editing=null, newPhoto=null, verifiedSession=null, currentQr=null;
 const ESC = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const urlFor = slug => SITE + '/p/?profile=' + encodeURIComponent(slug);
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.classList.remove('show'),3000)}
@@ -120,9 +120,9 @@ async function loadDashboard(){
         // than allowing RLS to silently return zero rows.
         const result=await api('rpc/qbranch_admin_snapshot',{method:'POST',body:{}});
         const snapshot=Array.isArray(result)?result[0]:result;
-        if(!snapshot || !Array.isArray(snapshot.profiles) || !snapshot.company ||
-           !Number.isInteger(snapshot.profile_count) ||
-           snapshot.profile_count!==snapshot.profiles.length){
+        if(!snapshot || !Array.isArray(snapshot.profiles) || !Array.isArray(snapshot.cards) || !snapshot.company ||
+           !Number.isInteger(snapshot.profile_count) || snapshot.profile_count!==snapshot.profiles.length ||
+           !Number.isInteger(snapshot.card_count) || snapshot.card_count!==snapshot.cards.length){
           throw new Error('Profile service returned an incomplete response.');
         }
         if(dashboardLoaded && people.length>0 && snapshot.profile_count===0){
@@ -131,6 +131,7 @@ async function loadDashboard(){
         const wasShowing=!$('dashboard').hidden;
         company=snapshot.company;
         people=snapshot.profiles;
+        cards=snapshot.cards;
         dashboardLoaded=true;
         clearDataIssue();
         showDashboard();
@@ -171,7 +172,10 @@ function setView(name,updateHash=true){
 }
 function activeProfiles(){return people.filter(p=>!p.deleted_at&&p.status!=='archived')}
 function archivedProfiles(){return people.filter(p=>p.deleted_at||p.status==='archived')}
-function viewUrl(p){return urlFor(p.slug)}
+function cardFor(person){return cards.find(card=>card.profile_id===person.id)||null}
+function getCard(input){return cards.find(card=>card.id===input.id)||cardFor(input)}
+function viewUrl(input){const card=getCard(input);return card?urlFor(card.slug):null}
+
 function pictureFor(p){
   const el=document.createElement(p.portrait_data?'img':'div');el.className='person-photo';
   if(p.portrait_data){el.src=p.portrait_data;el.alt='Portrait of '+p.full_name}
@@ -207,7 +211,7 @@ function rowFor(p,{archived=false}={}){
    row.appendChild(buttons);return row;
  }
  buttons.appendChild(action('Edit',()=>openEditor(p.id),{className:'action-btn',disabled:p.is_frozen,title:p.is_frozen?'Unfreeze before editing':''}));
- if(p.status==='published')buttons.appendChild(action('View profile',()=>openLive(p),{className:'action-btn view'}));
+ if(p.status==='published'&&cardFor(p))buttons.appendChild(action('View card',()=>openLive(p),{className:'action-btn view'}));
  buttons.appendChild(action(p.status==='published'?'Unpublish':'Publish',()=>changePublication(p),{className:'action-btn '+(p.status==='published'?'unpublish':'publish'),disabled:p.is_frozen||(p.status!=='published'&&!p.portrait_data),title:!p.portrait_data?'Add a photo first':''}));
  const more=document.createElement('details');more.className='row-menu';
  const summary=document.createElement('summary');summary.textContent='More';summary.setAttribute('aria-label','More actions for '+p.full_name);more.appendChild(summary);
@@ -238,19 +242,44 @@ function render(){
  }
  if(!active.length){overview.textContent='No active staff profiles yet.'}
  const live=$('liveLinksList');live.replaceChildren();
- const published=active.filter(p=>p.status==='published');
- if(!published.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No published profiles yet. Publish a staff profile with a portrait to generate its live link.';live.appendChild(empty)}
- for(const p of published){
+ if(!cards.length){
+  const empty=document.createElement('div');empty.className='empty';
+  empty.textContent='No permanent job cards have been configured. Contact AutoMinds Africa.';
+  live.appendChild(empty);
+ }
+ for(const slot of cards){
+  const holder=people.find(p=>p.id===slot.profile_id)||null;
+  const isLive=slot.active&&holder?.status==='published'&&!!holder?.portrait_data&&!holder?.deleted_at;
   const card=document.createElement('article');card.className='link-card';
-  const top=document.createElement('div');top.className='link-top';top.appendChild(pictureFor(p));
-  const text=document.createElement('div');text.className='link-profile-text';
-  const name=document.createElement('strong');name.textContent=p.full_name;text.appendChild(name);
-  const title=document.createElement('small');title.textContent=p.position_title+(p.is_frozen?' · Frozen':'');text.appendChild(title);top.appendChild(text);top.appendChild(statusFor(p));card.appendChild(top);
-  const url=document.createElement('div');url.className='link-url';url.textContent=viewUrl(p);card.appendChild(url);
+  const top=document.createElement('div');top.className='link-top';
+  if(holder)top.appendChild(pictureFor(holder));
+  else{const symbol=document.createElement('div');symbol.className='person-photo';symbol.textContent='QB';top.appendChild(symbol)}
+  const label=document.createElement('div');label.className='link-profile-text';
+  const job=document.createElement('strong');job.textContent=slot.position_name;label.appendChild(job);
+  const person=document.createElement('small');person.textContent=holder?'Assigned to '+holder.full_name:'No employee assigned';label.appendChild(person);top.appendChild(label);
+  const status=document.createElement('span');status.className='status-badge '+(isLive?'published':'draft');
+  status.textContent=isLive?'Live':'Awaiting holder';top.appendChild(status);card.appendChild(top);
+  const url=document.createElement('div');url.className='link-url';url.textContent=urlFor(slot.slug);card.appendChild(url);
+  const assign=document.createElement('div');assign.className='job-assignment';
+  const assignLabel=document.createElement('label');assignLabel.textContent='Assign this permanent card to:';
+  const select=document.createElement('select');select.setAttribute('aria-label','Employee assigned to '+slot.position_name);
+  const emptyOption=document.createElement('option');emptyOption.value='';emptyOption.textContent='No employee assigned';select.appendChild(emptyOption);
+  for(const staff of active){
+    const assignedElsewhere=cards.some(other=>other.id!==slot.id&&other.profile_id===staff.id);
+    if(assignedElsewhere)continue;
+    const option=document.createElement('option');option.value=staff.id;
+    option.textContent=staff.full_name+(staff.status!=='published'?' (Draft)':'');
+    select.appendChild(option);
+  }
+  select.value=slot.profile_id||'';
+  assignLabel.appendChild(select);assign.appendChild(assignLabel);
+  const button=action('Save assignment',()=>assignCardPosition(slot,select.value),{className:'ghost-btn'});
+  select.addEventListener('change',()=>button.disabled=(select.value||null)===(slot.profile_id||null));
+  button.disabled=true;assign.appendChild(button);card.appendChild(assign);
   const actions=document.createElement('div');actions.className='link-actions';
-  actions.appendChild(action('↗ View live profile',()=>openLive(p),{className:'primary-btn'}));
-  actions.appendChild(action('Copy link',()=>copyLink(p),{className:'ghost-btn'}));
-  actions.appendChild(action('QR code',()=>openQr(p),{className:'ghost-btn'}));
+  actions.appendChild(action('↗ Open position card',()=>openLive(slot),{className:'primary-btn'}));
+  actions.appendChild(action('Copy permanent link',()=>copyLink(slot),{className:'ghost-btn'}));
+  actions.appendChild(action('QR code',()=>openQr(slot),{className:'ghost-btn'}));
   card.appendChild(actions);live.appendChild(card);
  }
  const archiveList=$('archiveList');archiveList.replaceChildren();
@@ -306,15 +335,38 @@ async function restoreProfile(p){
  if(!await showConfirmation({title:'Restore '+p.full_name+'?',message:'The profile will return as a private draft. You can review it and publish again when ready.',buttonLabel:'Restore to draft'}))return;
  await mutateProfile(p,{status:'draft',deleted_at:null},'Profile restored to draft.');
 }
-function openLive(p){
- const link=document.createElement('a');link.href=viewUrl(p);link.target='_blank';link.rel='noopener noreferrer';document.body.appendChild(link);link.click();link.remove();
+async function assignCardPosition(slot,newId){
+ const target=newId?people.find(p=>p.id===newId):null;
+ if(newId&&!target)throw new Error('The selected staff member was not found.');
+ const destination=target?target.full_name:'no employee';
+ const ok=await showConfirmation({
+  title:'Update '+slot.position_name+' card?',
+  message:'The permanent QR code will stay unchanged. All scans will immediately show '+destination+
+    (target&&target.status!=='published'?'. The card will show a temporary holding page until the employee profile is published.':'.'),
+  buttonLabel:'Confirm assignment'
+ });
+ if(!ok)return;
+ await api('card_positions?id=eq.'+encodeURIComponent(slot.id),{method:'PATCH',body:{profile_id:newId||null}});
+ await loadDashboard();
+ toast('Position card assignment updated. The same QR code now leads to the updated staff profile.');
 }
-async function copyLink(p){
- try{await navigator.clipboard.writeText(viewUrl(p));toast('Live profile link copied.')}catch{window.prompt('Copy live profile link:',viewUrl(p))}
+function openLive(input){
+ const href=viewUrl(input);
+ if(!href)return toast('Assign the employee to a permanent position card first.');
+ const link=document.createElement('a');link.href=href;link.target='_blank';link.rel='noopener noreferrer';
+ document.body.appendChild(link);link.click();link.remove();
 }
-function openQr(p){
- currentQr=viewUrl(p);
- $('qrTitle').textContent=p.full_name;
+async function copyLink(input){
+ const href=viewUrl(input);
+ if(!href)return toast('Assign the employee to a permanent position card first.');
+ try{await navigator.clipboard.writeText(href);toast('Permanent position link copied.')}
+ catch{window.prompt('Copy permanent card URL:',href)}
+}
+function openQr(input){
+ const slot=getCard(input);
+ if(!slot)return toast('Assign the employee to a permanent position card first.');
+ currentQr=urlFor(slot.slug);
+ $('qrTitle').textContent=slot.position_name;
  $('qrImage').src='https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&format=png&data='+encodeURIComponent(currentQr);
  $('qrLink').textContent=currentQr;$('qrLink').href=currentQr;
  $('downloadQr').href=$('qrImage').src;$('qrDialog').showModal();
@@ -530,7 +582,7 @@ function paintCodeAtmosphere(){
   }
 }
 paintCodeAtmosphere();
-$('signOut').addEventListener('click',async()=>{try{const client=await getAuthClient();authError(await client.signOut());}catch(e){toast('Unable to sign out: '+e.message);return;}people=[];verifiedSession=null;dashboardLoaded=false;clearDataIssue();showLogin('You have signed out.')});
+$('signOut').addEventListener('click',async()=>{try{const client=await getAuthClient();authError(await client.signOut());}catch(e){toast('Unable to sign out: '+e.message);return;}people=[];cards=[];verifiedSession=null;dashboardLoaded=false;clearDataIssue();showLogin('You have signed out.')});
 function navigateTo(view){
  setView(view);
 }
