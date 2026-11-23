@@ -69,3 +69,20 @@ AutoMinds Africa — Work Smarter. Work Faster.
 - No staff photos, profile data, publication states or existing credentials were changed.
 - Tests: original JWT method reproduced HTTP 404, new SDK getSession returned no HTTP error in a no-login test, PostgreSQL authenticated role can run the helper without internal-schema access, and JavaScript syntax checks passed.
 - Real administrator sign-in and saving must still be tested from an authenticated browser session.
+
+
+## Permanent position-based NFC destinations — 23 November 2026
+- All printed NFC cards and QR codes must point to **job positions**, never to a staff member's personal slug.
+- Canonical production URLs:
+  - Procurement Officer: https://qbranch.netlify.app/p/?profile=procurement-officer
+  - Administrator: https://qbranch.netlify.app/p/?profile=administrator
+  - Sales Coordinator: https://qbranch.netlify.app/p/?profile=sales-coordinator
+- New Neon `card_positions` table stores each immutable role slug, display position, and current assigned profile ID.
+- `card_link_aliases` preserves legacy name links and redirects them to the permanent Netlify role URL, even if the staff member is replaced later.
+- `qbranch_admin_snapshot()` returns both staff and card assignments; Live Links & QR displays all three permanent cards and lets an approved administrator assign/reassign them.
+- Reassigning a position changes the employee Neon record presented at that URL, without changing the QR code or NFC tag.
+- The public site dynamically looks up the card position then its current published employee. Open pages check for both profile edits and card reassignment every 20 seconds and on refocus.
+- If the selected employee's profile is not published, the permanent card shows a temporary holding message until it is published.
+- Position slugs cannot be changed after creation; card URLs remain stable across future staff turnover.
+- **Printing note:** any Canva QR assets generated with old name-based URLs should be replaced with QR codes for the job slugs above before printing physical cards. Old name links still redirect.
+- No personal information, photo, subscription terms, prices, or live staff publication status was changed by this update.
