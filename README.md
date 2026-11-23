@@ -1,11 +1,11 @@
 # Qbranch Uganda Limited — Digital Profile Manager
 
-An AutoMinds Africa project. Live dashboard: https://mdanson27.github.io/Qbranch/
+An AutoMinds Africa project. Production dashboard: https://qbranch.netlify.app/ (GitHub Pages mirror: https://mdanson27.github.io/Qbranch/)
 
 ## Frontend
 - GitHub Pages serves the white, protected management dashboard at `/Qbranch/`.
 - Overview, Staff profiles, Live links & QR, and Archive & recovery are separate navigation views.
-- Public links use `/Qbranch/p/?profile=<staff-slug>`, loaded dynamically from Neon.
+- Public profile links and all dashboard-generated NFC/QR destinations use the canonical Netlify host: `https://qbranch.netlify.app/p/?profile=<staff-slug>`, loaded dynamically from Neon. The GitHub Pages mirror still functions but is not used for new cards.
 - Authorized admins can open the live profile directly, copy its URL, or display its QR code.
 - Profile changes are read directly from Neon, bypassing cached REST responses. Open profiles check for changes when focused and periodically.
 
