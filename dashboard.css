@@ -182,3 +182,12 @@ body.auth-mode .auth-screen{padding:24px 16px 20px}
 .data-health-copy span{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
 .data-health .ghost-btn{border-color:#d5ae76;background:#fffdf9;color:#80511a;white-space:nowrap;flex-shrink:0}
 @media(max-width:600px){.data-health{flex-direction:column;align-items:stretch}.data-health .ghost-btn{align-self:flex-start}}
+
+
+/* Permanent role-based NFC cards */
+.job-assignment{display:flex;align-items:flex-end;gap:10px;border-top:1px solid #e9edf7;padding-top:15px;margin:15px 0}
+.job-assignment label{display:grid;gap:7px;flex:1;min-width:0;color:#526786;font-size:11px;font-weight:700}
+.job-assignment select{width:100%;min-height:41px;padding:9px 12px;border:1px solid #dce5f4;border-radius:8px;background:#fff;color:#263e65;font-size:12px}
+.job-assignment .ghost-btn{min-height:41px;flex-shrink:0}
+.link-card .link-url{white-space:normal;overflow-wrap:anywhere;word-break:break-word;user-select:all}
+@media(max-width:550px){.job-assignment{align-items:stretch;flex-direction:column}.job-assignment .ghost-btn{align-self:flex-start}}
