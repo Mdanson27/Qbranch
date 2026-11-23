@@ -4,6 +4,10 @@ const API_BASE = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.
 const AUTH_BASE = 'https://ep-nameless-cherry-bet0ev73.neonauth.c-9.us-east-2.aws.neon.tech/qbranch_profiles/auth';
 let cachedAnonymousToken = null;
 let lastPublicUpdatedAt = null;
+let lastCardUpdatedAt = null;
+let resolvedCardSlug = null;
+let assignedPublicProfileId = null;
+const CANONICAL_CARD_ORIGIN = 'https://qbranch.netlify.app';
 let refreshInProgress = false;
 const PROFILE_SLUG = (() => {
   const match = window.location.pathname.match(/\/p\/([a-z0-9-]+)\/?$/i);
@@ -210,25 +214,45 @@ async function fetchData(path,signal) {
   }
   return response.json();
 }
+async function resolveCard(slug,signal){
+  const matching=await fetchData('card_positions?slug=eq.'+encodeURIComponent(slug)+'&select=id,slug,position_name,profile_id,updated_at&limit=1',signal);
+  if(matching?.[0])return matching[0];
+  // Historical employee-name QR links remain usable. They redirect to the
+  // permanent job slot; no future QR code depends on a person's name.
+  const aliases=await fetchData('card_link_aliases?legacy_slug=eq.'+encodeURIComponent(slug)+'&select=card_position_id&limit=1',signal);
+  if(!aliases?.[0])return null;
+  const cards=await fetchData('card_positions?id=eq.'+encodeURIComponent(aliases[0].card_position_id)+'&select=id,slug,position_name,profile_id,updated_at&limit=1',signal);
+  if(cards?.[0]){
+    window.location.replace(CANONICAL_CARD_ORIGIN+'/p/?profile='+encodeURIComponent(cards[0].slug));
+  }
+  return null;
+}
 async function loadProfile() {
   if (!PROFILE_SLUG) return showError('Qbranch Digital Profiles','Visit the management dashboard to manage Qbranch staff profiles.');
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(PROFILE_SLUG)) return showError('Invalid profile link','Please check the profile URL.');
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const people = await fetchData('profiles?slug=eq.' + encodeURIComponent(PROFILE_SLUG) + '&select=id,slug,full_name,position_title,short_intro,about_me,phone_e164,whatsapp_e164,email,portrait_url,portrait_data,skills,core_competencies,company_id,updated_at&limit=1', controller.signal);
-    const p = people?.[0];
-    if(!p) return showError('Profile not yet published','This staff profile is being prepared. Please check again after the card is approved.');
-    const [companies,experience,links] = await Promise.all([
-      fetchData('companies?id=eq.' + encodeURIComponent(p.company_id) + '&select=display_name,website_url,office_address,logo_path,tagline&limit=1',controller.signal),
-      fetchData('profile_experience?profile_id=eq.' + encodeURIComponent(p.id) + '&select=organization,position_title,start_year,end_year,is_current&order=display_order.asc',controller.signal),
-      fetchData('profile_links?profile_id=eq.' + encodeURIComponent(p.id) + '&select=platform,label,url&order=display_order.asc',controller.signal)
+    const card=await resolveCard(PROFILE_SLUG,controller.signal);
+    if(!card) return showError('Position link unavailable','This card destination is not available. Contact Qbranch Uganda Limited.');
+    resolvedCardSlug=card.slug;
+    lastCardUpdatedAt=card.updated_at;
+    assignedPublicProfileId=card.profile_id||null;
+    if(!card.profile_id)return showError('Profile being updated','Qbranch is updating the profile for this position. Please check back shortly.');
+    const people=await fetchData('profiles?id=eq.'+encodeURIComponent(card.profile_id)+'&select=id,slug,full_name,position_title,short_intro,about_me,phone_e164,whatsapp_e164,email,portrait_url,portrait_data,skills,core_competencies,company_id,updated_at&limit=1',controller.signal);
+    const p=people?.[0];
+    if(!p)return showError('Profile being updated','The '+card.position_name+' profile is being prepared. Please check back shortly.');
+    const [companies,experience,links]=await Promise.all([
+      fetchData('companies?id=eq.'+encodeURIComponent(p.company_id)+'&select=display_name,website_url,office_address,logo_path,tagline&limit=1',controller.signal),
+      fetchData('profile_experience?profile_id=eq.'+encodeURIComponent(p.id)+'&select=organization,position_title,start_year,end_year,is_current&order=display_order.asc',controller.signal),
+      fetchData('profile_links?profile_id=eq.'+encodeURIComponent(p.id)+'&select=platform,label,url&order=display_order.asc',controller.signal)
     ]);
-    if(!companies?.[0]) throw new Error('The company details are currently unavailable.');
+    if(!companies?.[0])throw new Error('The company details are currently unavailable.');
     lastPublicUpdatedAt=p.updated_at||null;
-    renderProfile({...p,company:companies[0],experience,links});
-  } catch (error) {
-    showError('Profile unavailable',error.name === 'AbortError' ? 'The request took too long. Please try again.' : error.message);
+    // Printed cards represent fixed positions even when the employee changes.
+    renderProfile({...p,position_title:card.position_name,company:companies[0],experience,links});
+  } catch(error) {
+    showError('Profile unavailable',error.name==='AbortError'?'The request took too long. Please try again.':error.message);
   } finally { clearTimeout(timeout); }
 }
 $('retryButton')?.addEventListener('click',() => window.location.reload());
@@ -244,16 +268,21 @@ $('shareBtn')?.addEventListener('click', async () => {
 loadProfile().catch(() => showError('Profile unavailable','Please try again.'));
 
 async function checkPublishedUpdates(){
- if(!PROFILE_SLUG || refreshInProgress || !lastPublicUpdatedAt || document.visibilityState==='hidden')return;
+ if(!resolvedCardSlug||refreshInProgress||document.visibilityState==='hidden')return;
  refreshInProgress=true;
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),8000);
  try{
-  const rows=await fetchData('profiles?slug=eq.'+encodeURIComponent(PROFILE_SLUG)+'&select=updated_at&limit=1',controller.signal);
-  if(!rows?.length || rows[0].updated_at!==lastPublicUpdatedAt)window.location.reload();
- }catch(_err){
-  // Leave the visible profile usable during temporary network interruptions.
- }finally{clearTimeout(timer);refreshInProgress=false}
+  const cards=await fetchData('card_positions?slug=eq.'+encodeURIComponent(resolvedCardSlug)+'&select=profile_id,updated_at&limit=1',controller.signal);
+  if(!cards?.length||cards[0].updated_at!==lastCardUpdatedAt||cards[0].profile_id!==assignedPublicProfileId){
+    window.location.reload();return;
+  }
+  if(assignedPublicProfileId){
+    const people=await fetchData('profiles?id=eq.'+encodeURIComponent(assignedPublicProfileId)+'&select=updated_at&limit=1',controller.signal);
+    if(!people?.length||people[0].updated_at!==lastPublicUpdatedAt)window.location.reload();
+  }
+ }catch(_err){/* Preserve the current page during temporary network outages. */}
+ finally{clearTimeout(timer);refreshInProgress=false}
 }
 window.addEventListener('focus',checkPublishedUpdates);
 document.addEventListener('visibilitychange',()=>{
