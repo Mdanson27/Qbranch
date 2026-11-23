@@ -1,7 +1,7 @@
 'use strict';
 const AUTH = 'https://ep-nameless-cherry-bet0ev73.neonauth.c-9.us-east-2.aws.neon.tech/qbranch_profiles/auth';
 const DATA = 'https://ep-nameless-cherry-bet0ev73.apirest.c-9.us-east-2.aws.neon.tech/qbranch_profiles/rest/v1';
-const SITE = 'https://mdanson27.github.io/Qbranch';
+const SITE = 'https://qbranch.netlify.app'; // Canonical public domain for profile links and QR codes
 const $ = s => document.getElementById(s);
 let people=[], company=null, editing=null, newPhoto=null, verifiedSession=null, currentQr=null;
 const ESC = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
